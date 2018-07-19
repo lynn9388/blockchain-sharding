@@ -40,9 +40,9 @@ construct a peer-to-peer network. It runs a web server to provides REST APIs.`,
 }
 
 type Server struct {
-	IP      string
-	APIPort int
-	RPCPort int
+	IP      string `json:"ip" description:"ip address of the server" default:"127.0.0.1"`
+	APIPort int    `json:"apiport" description:"port of the API Service" default:"9388"`
+	RPCPort int    `json:"rpcport" description:"port of the RPC listener" default:"9389"`
 }
 
 var (
