@@ -22,9 +22,10 @@ import (
 )
 
 const (
-	DefaultIP      = "127.0.0.1"
-	DefaultAPIPort = 9388
-	DefaultRPCPort = 9389
+	DefaultIP          = "127.0.0.1"
+	DefaultAPIPort     = 9388
+	DefaultRPCPort     = 9389
+	DefaultNoBootstrap = false
 )
 
 // serverCmd represents the server command
@@ -46,6 +47,7 @@ func init() {
 
 	// Here you will define your flags and configuration settings.
 	serverCmd.Flags().StringVarP(&serverConfig.IP, "ip", "i", DefaultIP, "the IP address of the server")
-	serverCmd.Flags().IntVarP(&serverConfig.APIPort, "api-port", "a", DefaultAPIPort, "which port the API server listen on")
+	serverCmd.Flags().IntVarP(&serverConfig.APIPort, "api-port", "a", DefaultAPIPort, "which port the API service listen on")
 	serverCmd.Flags().IntVarP(&serverConfig.RPCPort, "rpc-port", "r", DefaultRPCPort, "which port the blockchain node listen on")
+	serverCmd.Flags().BoolVar(&serverConfig.NoBootstrap, "no-bootstrap", DefaultNoBootstrap, "disable bootstrap nodes on this run")
 }
