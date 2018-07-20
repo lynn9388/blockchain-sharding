@@ -24,7 +24,6 @@ import (
 	"github.com/emicklei/go-restful"
 	"github.com/emicklei/go-restful-openapi"
 	"github.com/go-openapi/spec"
-	"github.com/lynn9388/blockchain-sharding/cmd"
 )
 
 type serverAPI int
@@ -42,14 +41,14 @@ func (s *serverAPI) webService() *restful.WebService {
 	ws.Route(ws.GET("/").To(s.findServerConfig).
 		Doc("get server config").
 		Metadata(restfulspec.KeyOpenAPITags, tags).
-		Writes(cmd.Server{}).
-		Returns(200, "OK", cmd.Server{}))
+		Writes(Config{}).
+		Returns(200, "OK", Config{}))
 
 	return ws
 }
 
 func (s *serverAPI) findServerConfig(request *restful.Request, response *restful.Response) {
-	response.WriteEntity(cmd.ServerConfig)
+	response.WriteEntity(config)
 }
 
 func newAPIService(addr *net.TCPAddr) {
@@ -65,8 +64,8 @@ func newAPIService(addr *net.TCPAddr) {
 	// You need to download the Swagger HTML5 assets and change the FilePath location in the config below.
 	http.Handle("/api/", http.StripPrefix("/api/", http.FileServer(http.Dir("/home/lynn/Documents/Git/swagger-ui/dist"))))
 
-	cmd.ServerLogger.Infof("start API service on %v, see API doc on http://%v/api/?url=http://%v/api.json", addr, addr, addr)
-	cmd.ServerLogger.Fatal(http.ListenAndServe(addr.String(), nil))
+	logger.Infof("start API service on %v, see API doc on http://%v/api/?url=http://%v/api.json", addr, addr, addr)
+	fatalChan <- http.ListenAndServe(addr.String(), nil)
 }
 
 func enrichSwaggerObject(swo *spec.Swagger) {

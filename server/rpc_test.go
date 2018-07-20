@@ -29,6 +29,6 @@ func TestPing(t *testing.T) {
 	go newRPCListener(&addr)
 	time.Sleep(1 * time.Second)
 	if ack := Ping(&node{addr}, pingMsg); ack != pongMsg {
-		t.Errorf("Ping(&rpcServer, %q) = %q", pingMsg, ack)
+		t.FailNow()
 	}
 }

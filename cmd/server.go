@@ -17,8 +17,8 @@
 package cmd
 
 import (
+	"github.com/lynn9388/blockchain-sharding/server"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap"
 )
 
 const (
@@ -35,29 +35,17 @@ var serverCmd = &cobra.Command{
 construct a peer-to-peer network. It runs a web server to provides REST APIs.`,
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		ServerLogger.Debugf("server's configuration: %+v", ServerConfig)
+		server.StartDaemon(&serverConfig)
 	},
 }
 
-type Server struct {
-	IP      string `json:"ip" description:"ip address of the server" default:"127.0.0.1"`
-	APIPort int    `json:"apiport" description:"port of the API Service" default:"9388"`
-	RPCPort int    `json:"rpcport" description:"port of the RPC listener" default:"9389"`
-}
-
-var (
-	ServerConfig Server
-	ServerLogger *zap.SugaredLogger
-)
+var serverConfig server.Config
 
 func init() {
 	rootCmd.AddCommand(serverCmd)
 
 	// Here you will define your flags and configuration settings.
-	serverCmd.Flags().StringVarP(&ServerConfig.IP, "ip", "i", DefaultIP, "the IP address of the server")
-	serverCmd.Flags().IntVarP(&ServerConfig.APIPort, "api-port", "a", DefaultAPIPort, "which port the API server listen on")
-	serverCmd.Flags().IntVarP(&ServerConfig.RPCPort, "rpc-port", "r", DefaultRPCPort, "which port the blockchain node listen on")
-
-	logger, _ := zap.NewDevelopment()
-	ServerLogger = logger.Sugar()
+	serverCmd.Flags().StringVarP(&serverConfig.IP, "ip", "i", DefaultIP, "the IP address of the server")
+	serverCmd.Flags().IntVarP(&serverConfig.APIPort, "api-port", "a", DefaultAPIPort, "which port the API server listen on")
+	serverCmd.Flags().IntVarP(&serverConfig.RPCPort, "rpc-port", "r", DefaultRPCPort, "which port the blockchain node listen on")
 }

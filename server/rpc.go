@@ -20,8 +20,6 @@ import (
 	"errors"
 	"net"
 	"net/rpc"
-
-	"github.com/lynn9388/blockchain-sharding/cmd"
 )
 
 type PingPongService int
@@ -45,12 +43,12 @@ func Ping(node *node, msg string) string {
 	ack := ""
 	client, err := rpc.Dial("tcp", node.rpcAddr.String())
 	if err != nil {
-		cmd.ServerLogger.Errorf("failed to dail %v: %v", node.rpcAddr.String(), err.Error())
+		logger.Errorf("failed to dial %v: %v", node.rpcAddr.String(), err.Error())
 		return ack
 	}
 	err = client.Call("PingPongService.PingPong", msg, &ack)
 	if err != nil {
-		cmd.ServerLogger.Errorf("failed to call PingPong on %v: %v", node.rpcAddr.String(), err.Error())
+		logger.Errorf("failed to call PingPong on %v: %v", node.rpcAddr.String(), err.Error())
 		return ack
 	}
 	return ack
@@ -60,14 +58,14 @@ func newRPCListener(addr *net.TCPAddr) {
 	rpc.Register(new(PingPongService))
 	listener, err := net.ListenTCP("tcp", addr)
 	if err != nil {
-		cmd.ServerLogger.Fatal("failed to start RPC listener")
+		fatalChan <- errors.New("failed to start RPC listener")
 	}
-	cmd.ServerLogger.Infof("start RPC listener on %v", addr.String())
+	logger.Infof("start RPC listener on %v", addr.String())
 
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			cmd.ServerLogger.Error("failed to accept a RPC connection")
+			logger.Error("failed to accept a RPC connection")
 			continue
 		}
 		go rpc.ServeConn(conn)
