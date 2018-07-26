@@ -65,7 +65,7 @@ func newAPIService(addr *net.TCPAddr) {
 	http.Handle("/api/", http.StripPrefix("/api/", http.FileServer(http.Dir("/home/lynn/Documents/Git/swagger-ui/dist"))))
 
 	logger.Infof("start API service on %v, see API doc on http://%v/api/?url=http://%v/api.json", addr, addr, addr)
-	fatalChan <- http.ListenAndServe(addr.String(), nil)
+	logger.Fatal(http.ListenAndServe(addr.String(), nil))
 }
 
 func enrichSwaggerObject(swo *spec.Swagger) {

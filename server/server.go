@@ -43,18 +43,16 @@ type (
 )
 
 var (
-	logger    *zap.SugaredLogger
-	fatalChan chan error
-	sigChan   chan os.Signal
-	config    *Config
-	daemon    server
+	logger  *zap.SugaredLogger
+	sigChan chan os.Signal
+	config  *Config
+	daemon  server
 )
 
 func init() {
 	l, _ := zap.NewDevelopment()
 	logger = l.Sugar()
 
-	fatalChan = make(chan error)
 	sigChan = make(chan os.Signal)
 
 	signal.Notify(sigChan, os.Interrupt, os.Kill, syscall.SIGTERM)
@@ -68,8 +66,6 @@ func StartDaemon(c *Config) {
 	go newRPCListener(&daemon.node.rpcAddr)
 
 	select {
-	case fatal := <-fatalChan:
-		logger.Fatal(fatal)
 	case <-sigChan:
 		logger.Info("caught stop signal, quitting...")
 	}

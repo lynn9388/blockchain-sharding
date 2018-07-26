@@ -58,7 +58,7 @@ func newRPCListener(addr *net.TCPAddr) {
 	rpc.Register(new(PingPongService))
 	listener, err := net.ListenTCP("tcp", addr)
 	if err != nil {
-		fatalChan <- errors.New("failed to start RPC listener")
+		logger.Fatalf("failed to start RPC listener: %v", err)
 	}
 	logger.Infof("start RPC listener on %v", addr.String())
 
