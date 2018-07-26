@@ -20,10 +20,8 @@ import (
 	"testing"
 
 	"net"
-
-	"github.com/lynn9388/blockchain-sharding/cmd"
 )
 
 func TestNewAPIService(t *testing.T) {
-	newAPIService(&net.TCPAddr{net.ParseIP(cmd.DefaultIP), cmd.DefaultRPCPort, ""})
+	newAPIService(&net.TCPAddr{net.ParseIP(DefaultIP), DefaultRPCPort, ""})
 }

@@ -42,6 +42,13 @@ type (
 	}
 )
 
+const (
+	DefaultIP          = "127.0.0.1"
+	DefaultAPIPort     = 9388
+	DefaultRPCPort     = 9389
+	DefaultNoBootstrap = false
+)
+
 var (
 	logger  *zap.SugaredLogger
 	sigChan chan os.Signal
@@ -54,7 +61,6 @@ func init() {
 	logger = l.Sugar()
 
 	sigChan = make(chan os.Signal)
-
 	signal.Notify(sigChan, os.Interrupt, os.Kill, syscall.SIGTERM)
 }
 
@@ -79,13 +85,13 @@ func configDaemon(config *Config) {
 
 	addr, err := net.ResolveTCPAddr("tcp", net.JoinHostPort(ip, apiPort))
 	if err != nil {
-		logger.Fatalf("failed to combine API service address: %+v", err.Error())
+		logger.Fatalf("failed to combine API service address: %+v", err)
 	}
 	daemon.apiAddr = *addr
 
 	addr, err = net.ResolveTCPAddr("tcp", net.JoinHostPort(ip, rpcPort))
 	if err != nil {
-		logger.Fatalf("failed to combine RPC listener address: %+v", err.Error())
+		logger.Fatalf("failed to combine RPC listener address: %+v", err)
 	}
 	daemon.node = node{*addr}
 }

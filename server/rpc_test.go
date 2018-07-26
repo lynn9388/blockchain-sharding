@@ -20,12 +20,10 @@ import (
 	"net"
 	"testing"
 	"time"
-
-	"github.com/lynn9388/blockchain-sharding/cmd"
 )
 
 func TestPing(t *testing.T) {
-	addr := net.TCPAddr{net.ParseIP(cmd.DefaultIP), cmd.DefaultRPCPort, ""}
+	addr := net.TCPAddr{net.ParseIP(DefaultIP), DefaultRPCPort, ""}
 	go newRPCListener(&addr)
 	time.Sleep(1 * time.Second)
 	if ack := Ping(&node{addr}, pingMsg); ack != pongMsg {

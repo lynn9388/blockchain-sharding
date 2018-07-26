@@ -28,6 +28,23 @@ import (
 
 type serverAPI int
 
+func newAPIService(addr *net.TCPAddr) {
+	restful.DefaultContainer.Add(new(serverAPI).webService())
+
+	config := restfulspec.Config{
+		WebServices: restful.RegisteredWebServices(),
+		APIPath:     "/api.json",
+		PostBuildSwaggerObjectHandler: enrichSwaggerObject}
+	restful.DefaultContainer.Add(restfulspec.NewOpenAPIService(config))
+
+	// Optionally, you can install the Swagger Service which provides a nice Web UI on your REST API
+	// You need to download the Swagger HTML5 assets and change the FilePath location in the config below.
+	http.Handle("/api/", http.StripPrefix("/api/", http.FileServer(http.Dir("/home/lynn/Documents/Git/swagger-ui/dist"))))
+
+	logger.Infof("start API service on %v, see API doc on http://%v/api/?url=http://%v/api.json", addr, addr, addr)
+	logger.Fatal(http.ListenAndServe(addr.String(), nil))
+}
+
 // WebService creates a new service that can handle REST requests for Server resources.
 func (s *serverAPI) webService() *restful.WebService {
 	ws := new(restful.WebService)
@@ -51,23 +68,6 @@ func (s *serverAPI) findServerConfig(request *restful.Request, response *restful
 	response.WriteEntity(config)
 }
 
-func newAPIService(addr *net.TCPAddr) {
-	restful.DefaultContainer.Add(new(serverAPI).webService())
-
-	config := restfulspec.Config{
-		WebServices: restful.RegisteredWebServices(),
-		APIPath:     "/api.json",
-		PostBuildSwaggerObjectHandler: enrichSwaggerObject}
-	restful.DefaultContainer.Add(restfulspec.NewOpenAPIService(config))
-
-	// Optionally, you can install the Swagger Service which provides a nice Web UI on your REST API
-	// You need to download the Swagger HTML5 assets and change the FilePath location in the config below.
-	http.Handle("/api/", http.StripPrefix("/api/", http.FileServer(http.Dir("/home/lynn/Documents/Git/swagger-ui/dist"))))
-
-	logger.Infof("start API service on %v, see API doc on http://%v/api/?url=http://%v/api.json", addr, addr, addr)
-	logger.Fatal(http.ListenAndServe(addr.String(), nil))
-}
-
 func enrichSwaggerObject(swo *spec.Swagger) {
 	swo.Info = &spec.Info{
 		InfoProps: spec.InfoProps{
@@ -85,7 +85,7 @@ func enrichSwaggerObject(swo *spec.Swagger) {
 			Version: "0.1",
 		},
 	}
-	swo.Tags = []spec.Tag{spec.Tag{TagProps: spec.TagProps{
+	swo.Tags = []spec.Tag{{TagProps: spec.TagProps{
 		Name:        "server",
 		Description: "Managing server"}}}
 }
