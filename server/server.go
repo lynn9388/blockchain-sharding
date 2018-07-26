@@ -65,7 +65,7 @@ func init() {
 }
 
 func StartDaemon(c *Config) {
-	initServer(config)
+	initServer(c)
 
 	go newAPIService(&daemon.apiAddr)
 	go newRPCListener(&daemon.node.rpcAddr)
