@@ -65,11 +65,11 @@ func init() {
 }
 
 func StartDaemon(c *Config) {
-	config = c
-	configDaemon(c)
+	initServer(config)
 
 	go newAPIService(&daemon.apiAddr)
 	go newRPCListener(&daemon.node.rpcAddr)
+	go newNodeManager()
 
 	select {
 	case <-sigChan:
@@ -77,8 +77,10 @@ func StartDaemon(c *Config) {
 	}
 }
 
-// configDaemon combines API service address and RPC listener address from configuration
-func configDaemon(config *Config) {
+// initServer initials config and combines API service address and RPC listener address from configuration
+func initServer(c *Config) {
+	config = c
+
 	ip := config.IP
 	apiPort := strconv.Itoa(config.APIPort)
 	rpcPort := strconv.Itoa(config.RPCPort)
@@ -94,4 +96,8 @@ func configDaemon(config *Config) {
 		logger.Fatalf("failed to combine RPC listener address: %+v", err)
 	}
 	daemon.node = node{*addr}
+}
+
+func isSelf(addr *net.TCPAddr) bool {
+	return addr.String() == daemon.node.rpcAddr.String()
 }

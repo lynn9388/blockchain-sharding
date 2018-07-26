@@ -32,9 +32,19 @@ var (
 	addNodeChan    = make(chan *net.TCPAddr)
 	removeNodeChan = make(chan *net.TCPAddr)
 	mux            = sync.RWMutex{}
+
+	bootstraps = []net.TCPAddr{
+		{net.ParseIP("127.0.0.1"), 9389, ""},
+	}
 )
 
-func manageNodes() {
+func newNodeManager() {
+	if !config.NoBootstrap {
+		for _, addr := range bootstraps {
+			addNode(&addr)
+		}
+	}
+
 	for {
 		select {
 		case addr := <-addNodeChan:
@@ -45,13 +55,17 @@ func manageNodes() {
 	}
 }
 
+// addNode adds new node to managed node list if it does not exist
 func addNode(addr *net.TCPAddr) error {
 	mux.Lock()
 	defer mux.Unlock()
-	nodes[addr.String()] = node{*addr}
+	if !isSelf(addr) {
+		nodes[addr.String()] = node{*addr}
+	}
 	return nil
 }
 
+// removeNode removes node from managed node list, return error if it does not exist
 func removeNode(addr *net.TCPAddr) error {
 	mux.Lock()
 	defer mux.Unlock()
