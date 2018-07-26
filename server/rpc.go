@@ -50,24 +50,8 @@ func newRPCListener(addr *net.TCPAddr) {
 // PingPong send pong ack message for ping message
 func (t *PingPongService) PingPong(msg *string, ack *string) error {
 	if *msg != pingMsg {
-		return errors.New("not a valid ping message")
+		return errors.New("not a valid ping message: " + *msg)
 	}
 	*ack = pongMsg
 	return nil
-}
-
-// Ping send message to a node and receive a ack message
-func Ping(node *node, msg string) string {
-	ack := ""
-	client, err := rpc.Dial("tcp", node.rpcAddr.String())
-	if err != nil {
-		logger.Errorf("failed to dial %v: %v", node.rpcAddr.String(), err)
-		return ack
-	}
-	err = client.Call("PingPongService.PingPong", msg, &ack)
-	if err != nil {
-		logger.Errorf("failed to call PingPong on %v: %v", node.rpcAddr.String(), err)
-		return ack
-	}
-	return ack
 }

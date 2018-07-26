@@ -15,3 +15,18 @@
  */
 
 package server
+
+import (
+	"net"
+	"testing"
+	"time"
+)
+
+func TestPing(t *testing.T) {
+	addr := net.TCPAddr{net.ParseIP(DefaultIP), DefaultRPCPort, ""}
+	go newRPCListener(&addr)
+	time.Sleep(1 * time.Second)
+	if client := ping(&node{addr}); client == nil {
+		t.FailNow()
+	}
+}
