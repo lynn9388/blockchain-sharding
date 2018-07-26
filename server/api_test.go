@@ -23,5 +23,5 @@ import (
 )
 
 func TestNewAPIService(t *testing.T) {
-	newAPIService(&net.TCPAddr{net.ParseIP(DefaultIP), DefaultRPCPort, ""})
+	newAPIService(&net.TCPAddr{net.ParseIP(DefaultIP), DefaultAPIPort, ""})
 }

@@ -25,14 +25,15 @@ import (
 
 // A node represents a potential peer on the network
 type node struct {
-	rpcAddr net.TCPAddr
+	RPCAddr net.TCPAddr
 }
 
 var (
-	nodes          = make(map[string]node)
-	addNodeChan    = make(chan *net.TCPAddr)
-	removeNodeChan = make(chan *net.TCPAddr)
-	nodeMux        = sync.RWMutex{}
+	nodes           = make(map[string]node)
+	addNodeChan     = make(chan *net.TCPAddr, 5)
+	removeNodeChan  = make(chan *net.TCPAddr)
+	discoverSigChan = make(chan bool)
+	nodeMux         = sync.RWMutex{}
 
 	bootstraps = []net.TCPAddr{
 		{net.ParseIP("127.0.0.1"), 9389, ""},
@@ -52,6 +53,8 @@ func newNodeManager() {
 			addNode(addr)
 		case addr := <-removeNodeChan:
 			removeNode(addr)
+		case <-discoverSigChan:
+			go discoverNodes()
 		}
 	}
 }
@@ -60,7 +63,10 @@ func newNodeManager() {
 func addNode(addr *net.TCPAddr) {
 	if !isSelf(addr) {
 		nodeMux.Lock()
-		nodes[addr.String()] = node{*addr}
+		if _, exists := nodes[addr.String()]; !exists {
+			nodes[addr.String()] = node{*addr}
+			logger.Debugf("add new node: %v", addr.String())
+		}
 		nodeMux.Unlock()
 	}
 }
@@ -68,14 +74,17 @@ func addNode(addr *net.TCPAddr) {
 // removeNode removes node from managed node list if it exists
 func removeNode(addr *net.TCPAddr) {
 	nodeMux.Lock()
-	delete(nodes, addr.String())
+	if _, exists := nodes[addr.String()]; exists {
+		delete(nodes, addr.String())
+		logger.Debugf("remove node: %v", addr.String())
+	}
 	nodeMux.Unlock()
 }
 
 func getShuffleNodes() *[]node {
 	nodeMux.RLock()
 	length := len(nodes)
-	tempNodes := make([]node, length)
+	tempNodes := make([]node, 0, length)
 	for _, node := range nodes {
 		tempNodes = append(tempNodes, node)
 	}
@@ -90,10 +99,30 @@ func getShuffleNodes() *[]node {
 }
 
 func connectNode(node *node) (*rpc.Client, error) {
-	client, err := rpc.Dial("tcp", node.rpcAddr.String())
+	client, err := rpc.Dial("tcp", node.RPCAddr.String())
 	if err != nil {
-		logger.Errorf("failed to dial %v: %v", node.rpcAddr.String(), err)
+		logger.Error(err)
 		return nil, err
 	}
 	return client, nil
+}
+
+func discoverNodes() {
+	shuffleNodes := getShuffleNodes()
+	for _, n := range *shuffleNodes {
+		client, err := connectNode(&n)
+		if err != nil {
+			removeNodeChan <- &n.RPCAddr
+			continue
+		}
+		newNodes := make([]node, 0)
+		err = client.Call("NodeService.GeiNeighborNodes", daemon.node.RPCAddr, &newNodes)
+		client.Close()
+		if err != nil {
+			logger.Errorf("failed to call GeiNeighborNodes on %+v: %v", n, err)
+		}
+		for _, n := range newNodes {
+			addNodeChan <- &n.RPCAddr
+		}
+	}
 }

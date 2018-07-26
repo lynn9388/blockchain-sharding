@@ -22,7 +22,10 @@ import (
 	"net/rpc"
 )
 
-type PingPongService int
+type (
+	PingPongService int
+	NodeService     int
+)
 
 const (
 	pingMsg = "PING"
@@ -31,7 +34,9 @@ const (
 
 func newRPCListener(addr *net.TCPAddr) {
 	rpc.Register(new(PingPongService))
+	rpc.Register(new(NodeService))
 	listener, err := net.ListenTCP("tcp", addr)
+	defer listener.Close()
 	if err != nil {
 		logger.Fatalf("failed to start RPC listener: %v", err)
 	}
@@ -53,5 +58,17 @@ func (t *PingPongService) PingPong(msg *string, ack *string) error {
 		return errors.New("not a valid ping message: " + *msg)
 	}
 	*ack = pongMsg
+	return nil
+}
+
+func (t *NodeService) GeiNeighborNodes(source *net.TCPAddr, nodes *[]node) error {
+	addNodeChan <- source
+	shuffleNodes := getShuffleNodes()
+
+	length := len(*shuffleNodes)
+	if maxPeerNum < length {
+		length = maxPeerNum
+	}
+	*nodes = (*shuffleNodes)[:length]
 	return nil
 }

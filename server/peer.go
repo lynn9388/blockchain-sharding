@@ -19,6 +19,7 @@ package server
 import (
 	"net/rpc"
 	"sync"
+	"time"
 )
 
 type peer struct {
@@ -27,7 +28,9 @@ type peer struct {
 }
 
 const (
-	maxPeerNum = 4
+	maxPeerNum         = 4
+	lackNodesSleepTime = 1
+	fullNodesSleepTime = 2
 )
 
 var (
@@ -38,6 +41,8 @@ var (
 )
 
 func newPeerManager() {
+	go connectPeers()
+
 	for {
 		select {
 		case node := <-addPeerChan:
@@ -49,22 +54,22 @@ func newPeerManager() {
 }
 
 func addPeer(node *node) {
-	client := ping(node)
-	if client != nil {
-		peerMux.Lock()
-		if _, exists := peers[node.rpcAddr.String()]; exists {
-			peers[node.rpcAddr.String()].client.Close()
+	peerMux.Lock()
+	defer peerMux.Unlock()
+	if _, exists := peers[node.RPCAddr.String()]; !exists {
+		client := ping(node)
+		if client != nil {
+			peers[node.RPCAddr.String()] = peer{node, client}
+			logger.Debugf("add new peer: %v", node.RPCAddr.String())
 		}
-		peers[node.rpcAddr.String()] = peer{node, client}
-		peerMux.Unlock()
 	}
 }
 
 func removePeer(node *node) {
 	peerMux.Lock()
-	peers[node.rpcAddr.String()].client.Close()
-	delete(peers, node.rpcAddr.String())
-	peerMux.Unlock()
+	defer peerMux.Unlock()
+	peers[node.RPCAddr.String()].client.Close()
+	delete(peers, node.RPCAddr.String())
 }
 
 // ping tests if a node is reachable and returns connected client
@@ -76,7 +81,7 @@ func ping(node *node) *rpc.Client {
 	}
 	err = client.Call("PingPongService.PingPong", pingMsg, &ack)
 	if err != nil {
-		logger.Errorf("failed to call PingPong on %v: %v", node.rpcAddr.String(), err)
+		logger.Errorf("failed to call PingPong on %+v: %v", *node, err)
 		return nil
 	}
 	if ack != pongMsg {
@@ -84,4 +89,31 @@ func ping(node *node) *rpc.Client {
 		return nil
 	}
 	return client
+}
+
+func connectPeers() {
+	for {
+		peerMux.RLock()
+		length := len(peers)
+		peerMux.RUnlock()
+		if length < maxPeerNum {
+			shuffleNodes := getShuffleNodes()
+			if len(*shuffleNodes) > maxPeerNum {
+				*shuffleNodes = (*shuffleNodes)[:maxPeerNum]
+			}
+			for _, n := range *shuffleNodes {
+				addPeerChan <- &n
+			}
+		}
+
+		peerMux.RLock()
+		length = len(peers)
+		peerMux.RUnlock()
+		if length < maxPeerNum {
+			discoverSigChan <- true
+			time.Sleep(lackNodesSleepTime * time.Second)
+		} else {
+			time.Sleep(fullNodesSleepTime * time.Second)
+		}
+	}
 }

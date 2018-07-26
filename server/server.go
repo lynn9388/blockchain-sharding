@@ -25,6 +25,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	"time"
+
 	"go.uber.org/zap"
 )
 
@@ -68,7 +70,10 @@ func StartDaemon(c *Config) {
 	initServer(c)
 
 	go newAPIService(&daemon.apiAddr)
-	go newRPCListener(&daemon.node.rpcAddr)
+	go newRPCListener(&daemon.node.RPCAddr)
+
+	time.Sleep(2 * time.Second)
+
 	go newNodeManager()
 	go newPeerManager()
 
@@ -100,5 +105,5 @@ func initServer(c *Config) {
 }
 
 func isSelf(addr *net.TCPAddr) bool {
-	return addr.String() == daemon.node.rpcAddr.String()
+	return addr.String() == daemon.node.RPCAddr.String()
 }
