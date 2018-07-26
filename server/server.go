@@ -70,6 +70,7 @@ func StartDaemon(c *Config) {
 	go newAPIService(&daemon.apiAddr)
 	go newRPCListener(&daemon.node.rpcAddr)
 	go newNodeManager()
+	go newPeerManager()
 
 	select {
 	case <-sigChan:

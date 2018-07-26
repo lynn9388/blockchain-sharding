@@ -16,15 +16,55 @@
 
 package server
 
-import "net/rpc"
+import (
+	"net/rpc"
+	"sync"
+)
 
-func connectNode(node *node) (*rpc.Client, error) {
-	client, err := rpc.Dial("tcp", node.rpcAddr.String())
-	if err != nil {
-		logger.Errorf("failed to dial %v: %v", node.rpcAddr.String(), err)
-		return nil, err
+type peer struct {
+	node   *node
+	client *rpc.Client
+}
+
+const (
+	maxPeerNum = 4
+)
+
+var (
+	peers          = make(map[string]peer)
+	addPeerChan    = make(chan *node)
+	removePeerChan = make(chan *node)
+	peerMux        = sync.RWMutex{}
+)
+
+func newPeerManager() {
+	for {
+		select {
+		case node := <-addPeerChan:
+			addPeer(node)
+		case node := <-removePeerChan:
+			removePeer(node)
+		}
 	}
-	return client, nil
+}
+
+func addPeer(node *node) {
+	client := ping(node)
+	if client != nil {
+		peerMux.Lock()
+		if _, exists := peers[node.rpcAddr.String()]; exists {
+			peers[node.rpcAddr.String()].client.Close()
+		}
+		peers[node.rpcAddr.String()] = peer{node, client}
+		peerMux.Unlock()
+	}
+}
+
+func removePeer(node *node) {
+	peerMux.Lock()
+	peers[node.rpcAddr.String()].client.Close()
+	delete(peers, node.rpcAddr.String())
+	peerMux.Unlock()
 }
 
 // ping tests if a node is reachable and returns connected client

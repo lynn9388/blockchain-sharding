@@ -17,8 +17,9 @@
 package server
 
 import (
-	"errors"
+	"math/rand"
 	"net"
+	"net/rpc"
 	"sync"
 )
 
@@ -31,7 +32,7 @@ var (
 	nodes          = make(map[string]node)
 	addNodeChan    = make(chan *net.TCPAddr)
 	removeNodeChan = make(chan *net.TCPAddr)
-	mux            = sync.RWMutex{}
+	nodeMux        = sync.RWMutex{}
 
 	bootstraps = []net.TCPAddr{
 		{net.ParseIP("127.0.0.1"), 9389, ""},
@@ -56,22 +57,43 @@ func newNodeManager() {
 }
 
 // addNode adds new node to managed node list if it does not exist
-func addNode(addr *net.TCPAddr) error {
-	mux.Lock()
-	defer mux.Unlock()
+func addNode(addr *net.TCPAddr) {
 	if !isSelf(addr) {
+		nodeMux.Lock()
 		nodes[addr.String()] = node{*addr}
+		nodeMux.Unlock()
 	}
-	return nil
 }
 
-// removeNode removes node from managed node list, return error if it does not exist
-func removeNode(addr *net.TCPAddr) error {
-	mux.Lock()
-	defer mux.Unlock()
-	if _, exists := nodes[addr.String()]; !exists {
-		return errors.New("no record of node: " + addr.String())
-	}
+// removeNode removes node from managed node list if it exists
+func removeNode(addr *net.TCPAddr) {
+	nodeMux.Lock()
 	delete(nodes, addr.String())
-	return nil
+	nodeMux.Unlock()
+}
+
+func getShuffleNodes() *[]node {
+	nodeMux.RLock()
+	length := len(nodes)
+	tempNodes := make([]node, length)
+	for _, node := range nodes {
+		tempNodes = append(tempNodes, node)
+	}
+	nodeMux.RUnlock()
+
+	shuffleNodes := make([]node, length)
+	perm := rand.Perm(length)
+	for i, v := range perm {
+		shuffleNodes[v] = tempNodes[i]
+	}
+	return &shuffleNodes
+}
+
+func connectNode(node *node) (*rpc.Client, error) {
+	client, err := rpc.Dial("tcp", node.rpcAddr.String())
+	if err != nil {
+		logger.Errorf("failed to dial %v: %v", node.rpcAddr.String(), err)
+		return nil, err
+	}
+	return client, nil
 }
