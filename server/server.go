@@ -21,24 +21,18 @@ import (
 
 	"os"
 
+	"time"
+
 	"os/signal"
 	"syscall"
-
-	"time"
 
 	"github.com/lynn9388/blockchain-sharding/common"
 )
 
-var (
-	sigChan chan os.Signal
-)
-
-func init() {
-	sigChan = make(chan os.Signal)
-	signal.Notify(sigChan, os.Interrupt, os.Kill, syscall.SIGTERM)
-}
-
 func StartServer() {
+	sigChan := make(chan os.Signal)
+	signal.Notify(sigChan, os.Interrupt, os.Kill, syscall.SIGTERM)
+
 	go newAPIService(&common.Server.APIAddr)
 	go newRPCListener(&common.Server.Node.RPCAddr)
 
