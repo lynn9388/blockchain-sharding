@@ -43,10 +43,8 @@ var (
 )
 
 func newNodeManager() {
-	if !config.NoBootstrap {
-		for _, addr := range bootstraps {
-			addNode(&addr)
-		}
+	for _, addr := range bootstraps {
+		addNode(&addr)
 	}
 
 	for {

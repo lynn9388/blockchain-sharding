@@ -22,7 +22,6 @@ import (
 )
 
 func TestManageNodes(t *testing.T) {
-	initServer(&Config{NoBootstrap: true})
 	go newNodeManager()
 	addr := &net.TCPAddr{net.ParseIP(DefaultIP), DefaultRPCPort, ""}
 	addNodeChan <- addr

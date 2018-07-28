@@ -32,10 +32,9 @@ import (
 
 type (
 	Config struct {
-		IP          string `json:"ip" description:"ip address of the server" default:"127.0.0.1"`
-		APIPort     int    `json:"apiport" description:"port of the API Service" default:"9388"`
-		RPCPort     int    `json:"rpcport" description:"port of the RPC listener" default:"9389"`
-		NoBootstrap bool   `json:"no-bootstrap" description:"disable bootstrap nodes on this run" default:"false"`
+		IP      string `json:"ip" description:"ip address of the server" default:"127.0.0.1"`
+		APIPort int    `json:"apiport" description:"port of the API Service" default:"9388"`
+		RPCPort int    `json:"rpcport" description:"port of the RPC listener" default:"9389"`
 	}
 
 	server struct {
@@ -45,10 +44,9 @@ type (
 )
 
 const (
-	DefaultIP          = "127.0.0.1"
-	DefaultAPIPort     = 9388
-	DefaultRPCPort     = 9389
-	DefaultNoBootstrap = false
+	DefaultIP      = "127.0.0.1"
+	DefaultAPIPort = 9388
+	DefaultRPCPort = 9389
 )
 
 var (

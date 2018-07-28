@@ -42,5 +42,4 @@ func init() {
 	serverCmd.Flags().StringVarP(&serverConfig.IP, "ip", "i", server.DefaultIP, "the IP address of the server")
 	serverCmd.Flags().IntVarP(&serverConfig.APIPort, "api-port", "a", server.DefaultAPIPort, "which port the API service listen on")
 	serverCmd.Flags().IntVarP(&serverConfig.RPCPort, "rpc-port", "r", server.DefaultRPCPort, "which port the blockchain node listen on")
-	serverCmd.Flags().BoolVar(&serverConfig.NoBootstrap, "no-bootstrap", server.DefaultNoBootstrap, "disable bootstrap nodes on this run")
 }
