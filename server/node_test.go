@@ -19,11 +19,13 @@ package server
 import (
 	"net"
 	"testing"
+
+	"github.com/lynn9388/blockchain-sharding/common"
 )
 
 func TestManageNodes(t *testing.T) {
 	go newNodeManager()
-	addr := &net.TCPAddr{net.ParseIP(DefaultIP), DefaultRPCPort, ""}
+	addr := &net.TCPAddr{IP: net.ParseIP(common.DefaultIP), Port: common.DefaultRPCPort}
 	addNodeChan <- addr
 	addNodeChan <- addr
 	if len(nodes) != 1 {

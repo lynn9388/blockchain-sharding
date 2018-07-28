@@ -25,13 +25,8 @@ import (
 	"github.com/lynn9388/blockchain-sharding/common"
 )
 
-// A node represents a potential peer on the network
-type node struct {
-	RPCAddr net.TCPAddr
-}
-
 var (
-	nodes           = make(map[string]node)
+	nodes           = make(map[string]common.Node)
 	addNodeChan     = make(chan *net.TCPAddr, 5)
 	removeNodeChan  = make(chan *net.TCPAddr)
 	discoverSigChan = make(chan bool)
@@ -64,7 +59,7 @@ func addNode(addr *net.TCPAddr) {
 	if !isSelf(addr) {
 		nodeMux.Lock()
 		if _, exists := nodes[addr.String()]; !exists {
-			nodes[addr.String()] = node{*addr}
+			nodes[addr.String()] = common.Node{*addr}
 			common.Logger.Debugf("add new node: %v", addr.String())
 		}
 		nodeMux.Unlock()
@@ -81,16 +76,16 @@ func removeNode(addr *net.TCPAddr) {
 	nodeMux.Unlock()
 }
 
-func getShuffleNodes() *[]node {
+func getShuffleNodes() *[]common.Node {
 	nodeMux.RLock()
 	length := len(nodes)
-	tempNodes := make([]node, 0, length)
+	tempNodes := make([]common.Node, 0, length)
 	for _, node := range nodes {
 		tempNodes = append(tempNodes, node)
 	}
 	nodeMux.RUnlock()
 
-	shuffleNodes := make([]node, length)
+	shuffleNodes := make([]common.Node, length)
 	perm := rand.Perm(length)
 	for i, v := range perm {
 		shuffleNodes[v] = tempNodes[i]
@@ -98,7 +93,7 @@ func getShuffleNodes() *[]node {
 	return &shuffleNodes
 }
 
-func connectNode(node *node) (*rpc.Client, error) {
+func connectNode(node *common.Node) (*rpc.Client, error) {
 	client, err := rpc.Dial("tcp", node.RPCAddr.String())
 	if err != nil {
 		common.Logger.Error(err)
@@ -115,8 +110,8 @@ func discoverNodes() {
 			removeNodeChan <- &n.RPCAddr
 			continue
 		}
-		newNodes := make([]node, 0)
-		err = client.Call("NodeService.GeiNeighborNodes", daemon.node.RPCAddr, &newNodes)
+		newNodes := make([]common.Node, 0)
+		err = client.Call("NodeService.GeiNeighborNodes", common.Server.Node.RPCAddr, &newNodes)
 		client.Close()
 		if err != nil {
 			common.Logger.Errorf("failed to call GeiNeighborNodes on %+v: %v", n, err)

@@ -18,7 +18,6 @@ package server
 
 import (
 	"net"
-	"strconv"
 
 	"os"
 
@@ -30,29 +29,8 @@ import (
 	"github.com/lynn9388/blockchain-sharding/common"
 )
 
-type (
-	Config struct {
-		IP      string `json:"ip" description:"ip address of the server" default:"127.0.0.1"`
-		APIPort int    `json:"apiport" description:"port of the API Service" default:"9388"`
-		RPCPort int    `json:"rpcport" description:"port of the RPC listener" default:"9389"`
-	}
-
-	server struct {
-		apiAddr net.TCPAddr
-		node    node
-	}
-)
-
-const (
-	DefaultIP      = "127.0.0.1"
-	DefaultAPIPort = 9388
-	DefaultRPCPort = 9389
-)
-
 var (
 	sigChan chan os.Signal
-	config  *Config
-	daemon  server
 )
 
 func init() {
@@ -60,11 +38,9 @@ func init() {
 	signal.Notify(sigChan, os.Interrupt, os.Kill, syscall.SIGTERM)
 }
 
-func StartDaemon(c *Config) {
-	initServer(c)
-
-	go newAPIService(&daemon.apiAddr)
-	go newRPCListener(&daemon.node.RPCAddr)
+func StartServer() {
+	go newAPIService(&common.Server.APIAddr)
+	go newRPCListener(&common.Server.Node.RPCAddr)
 
 	time.Sleep(2 * time.Second)
 
@@ -77,27 +53,6 @@ func StartDaemon(c *Config) {
 	}
 }
 
-// initServer initials config and combines API service address and RPC listener address from configuration
-func initServer(c *Config) {
-	config = c
-
-	ip := config.IP
-	apiPort := strconv.Itoa(config.APIPort)
-	rpcPort := strconv.Itoa(config.RPCPort)
-
-	addr, err := net.ResolveTCPAddr("tcp", net.JoinHostPort(ip, apiPort))
-	if err != nil {
-		common.Logger.Fatalf("failed to combine API service address: %+v", err)
-	}
-	daemon.apiAddr = *addr
-
-	addr, err = net.ResolveTCPAddr("tcp", net.JoinHostPort(ip, rpcPort))
-	if err != nil {
-		common.Logger.Fatalf("failed to combine RPC listener address: %+v", err)
-	}
-	daemon.node = node{*addr}
-}
-
 func isSelf(addr *net.TCPAddr) bool {
-	return addr.String() == daemon.node.RPCAddr.String()
+	return addr.String() == common.Server.Node.RPCAddr.String()
 }

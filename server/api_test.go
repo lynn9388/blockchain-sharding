@@ -19,9 +19,9 @@ package server
 import (
 	"testing"
 
-	"net"
+	"github.com/lynn9388/blockchain-sharding/common"
 )
 
 func TestNewAPIService(t *testing.T) {
-	newAPIService(&net.TCPAddr{net.ParseIP(DefaultIP), DefaultAPIPort, ""})
+	newAPIService(&common.Server.APIAddr)
 }

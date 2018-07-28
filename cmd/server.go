@@ -17,6 +17,7 @@
 package cmd
 
 import (
+	"github.com/lynn9388/blockchain-sharding/common"
 	"github.com/lynn9388/blockchain-sharding/server"
 	"github.com/spf13/cobra"
 )
@@ -29,17 +30,18 @@ var serverCmd = &cobra.Command{
 construct a peer-to-peer network. It runs a web server to provides REST APIs.`,
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		server.StartDaemon(&serverConfig)
+		server.StartServer()
 	},
 }
 
-var serverConfig server.Config
-
 func init() {
 	rootCmd.AddCommand(serverCmd)
+	var config common.Config
 
 	// Here you will define your flags and configuration settings.
-	serverCmd.Flags().StringVarP(&serverConfig.IP, "ip", "i", server.DefaultIP, "the IP address of the server")
-	serverCmd.Flags().IntVarP(&serverConfig.APIPort, "api-port", "a", server.DefaultAPIPort, "which port the API service listen on")
-	serverCmd.Flags().IntVarP(&serverConfig.RPCPort, "rpc-port", "r", server.DefaultRPCPort, "which port the blockchain node listen on")
+	serverCmd.Flags().StringVarP(&(config.IP), "ip", "i", common.DefaultIP, "the IP address of the server")
+	serverCmd.Flags().IntVarP(&(config.APIPort), "api-port", "a", common.DefaultAPIPort, "which port the API service listen on")
+	serverCmd.Flags().IntVarP(&(config.RPCPort), "rpc-port", "r", common.DefaultRPCPort, "which port the blockchain node listen on")
+
+	common.ConfigServer(&config)
 }

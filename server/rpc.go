@@ -63,7 +63,7 @@ func (t *PingPongService) PingPong(msg *string, ack *string) error {
 	return nil
 }
 
-func (t *NodeService) GeiNeighborNodes(source *net.TCPAddr, nodes *[]node) error {
+func (t *NodeService) GeiNeighborNodes(source *net.TCPAddr, nodes *[]common.Node) error {
 	addNodeChan <- source
 	shuffleNodes := getShuffleNodes()
 

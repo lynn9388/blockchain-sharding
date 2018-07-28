@@ -59,14 +59,14 @@ func (s *serverAPI) webService() *restful.WebService {
 	ws.Route(ws.GET("/").To(s.findServerConfig).
 		Doc("get server config").
 		Metadata(restfulspec.KeyOpenAPITags, tags).
-		Writes(Config{}).
-		Returns(200, "OK", Config{}))
+		Writes(common.Config{}).
+		Returns(200, "OK", common.Config{}))
 
 	return ws
 }
 
 func (s *serverAPI) findServerConfig(request *restful.Request, response *restful.Response) {
-	response.WriteEntity(config)
+	response.WriteEntity(common.ServerConfig)
 }
 
 func enrichSwaggerObject(swo *spec.Swagger) {

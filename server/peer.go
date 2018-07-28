@@ -25,7 +25,7 @@ import (
 )
 
 type peer struct {
-	node   *node
+	node   *common.Node
 	client *rpc.Client
 }
 
@@ -37,8 +37,8 @@ const (
 
 var (
 	peers          = make(map[string]peer)
-	addPeerChan    = make(chan *node)
-	removePeerChan = make(chan *node)
+	addPeerChan    = make(chan *common.Node)
+	removePeerChan = make(chan *common.Node)
 	peerMux        = sync.RWMutex{}
 )
 
@@ -55,7 +55,7 @@ func newPeerManager() {
 	}
 }
 
-func addPeer(node *node) {
+func addPeer(node *common.Node) {
 	peerMux.Lock()
 	defer peerMux.Unlock()
 	if _, exists := peers[node.RPCAddr.String()]; !exists {
@@ -67,7 +67,7 @@ func addPeer(node *node) {
 	}
 }
 
-func removePeer(node *node) {
+func removePeer(node *common.Node) {
 	peerMux.Lock()
 	defer peerMux.Unlock()
 	peers[node.RPCAddr.String()].client.Close()
@@ -75,7 +75,7 @@ func removePeer(node *node) {
 }
 
 // ping tests if a node is reachable and returns connected client
-func ping(node *node) *rpc.Client {
+func ping(node *common.Node) *rpc.Client {
 	ack := ""
 	client, err := connectNode(node)
 	if err != nil {

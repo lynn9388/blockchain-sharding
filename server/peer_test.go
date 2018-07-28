@@ -20,13 +20,15 @@ import (
 	"net"
 	"testing"
 	"time"
+
+	"github.com/lynn9388/blockchain-sharding/common"
 )
 
 func TestPing(t *testing.T) {
-	addr := net.TCPAddr{net.ParseIP(DefaultIP), DefaultRPCPort, ""}
+	addr := net.TCPAddr{IP: net.ParseIP(common.DefaultIP), Port: common.DefaultRPCPort}
 	go newRPCListener(&addr)
 	time.Sleep(1 * time.Second)
-	if client := ping(&node{addr}); client == nil {
+	if client := ping(&common.Node{RPCAddr: addr}); client == nil {
 		t.FailNow()
 	}
 }
