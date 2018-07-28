@@ -27,7 +27,7 @@ import (
 
 	"time"
 
-	"go.uber.org/zap"
+	"github.com/lynn9388/blockchain-sharding/common"
 )
 
 type (
@@ -52,16 +52,12 @@ const (
 )
 
 var (
-	logger  *zap.SugaredLogger
 	sigChan chan os.Signal
 	config  *Config
 	daemon  server
 )
 
 func init() {
-	l, _ := zap.NewDevelopment()
-	logger = l.Sugar()
-
 	sigChan = make(chan os.Signal)
 	signal.Notify(sigChan, os.Interrupt, os.Kill, syscall.SIGTERM)
 }
@@ -79,7 +75,7 @@ func StartDaemon(c *Config) {
 
 	select {
 	case <-sigChan:
-		logger.Info("caught stop signal, quitting...")
+		common.Logger.Info("caught stop signal, quitting...")
 	}
 }
 
@@ -93,13 +89,13 @@ func initServer(c *Config) {
 
 	addr, err := net.ResolveTCPAddr("tcp", net.JoinHostPort(ip, apiPort))
 	if err != nil {
-		logger.Fatalf("failed to combine API service address: %+v", err)
+		common.Logger.Fatalf("failed to combine API service address: %+v", err)
 	}
 	daemon.apiAddr = *addr
 
 	addr, err = net.ResolveTCPAddr("tcp", net.JoinHostPort(ip, rpcPort))
 	if err != nil {
-		logger.Fatalf("failed to combine RPC listener address: %+v", err)
+		common.Logger.Fatalf("failed to combine RPC listener address: %+v", err)
 	}
 	daemon.node = node{*addr}
 }

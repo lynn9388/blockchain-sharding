@@ -21,6 +21,8 @@ import (
 	"net"
 	"net/rpc"
 	"sync"
+
+	"github.com/lynn9388/blockchain-sharding/common"
 )
 
 // A node represents a potential peer on the network
@@ -65,7 +67,7 @@ func addNode(addr *net.TCPAddr) {
 		nodeMux.Lock()
 		if _, exists := nodes[addr.String()]; !exists {
 			nodes[addr.String()] = node{*addr}
-			logger.Debugf("add new node: %v", addr.String())
+			common.Logger.Debugf("add new node: %v", addr.String())
 		}
 		nodeMux.Unlock()
 	}
@@ -76,7 +78,7 @@ func removeNode(addr *net.TCPAddr) {
 	nodeMux.Lock()
 	if _, exists := nodes[addr.String()]; exists {
 		delete(nodes, addr.String())
-		logger.Debugf("remove node: %v", addr.String())
+		common.Logger.Debugf("remove node: %v", addr.String())
 	}
 	nodeMux.Unlock()
 }
@@ -101,7 +103,7 @@ func getShuffleNodes() *[]node {
 func connectNode(node *node) (*rpc.Client, error) {
 	client, err := rpc.Dial("tcp", node.RPCAddr.String())
 	if err != nil {
-		logger.Error(err)
+		common.Logger.Error(err)
 		return nil, err
 	}
 	return client, nil
@@ -119,7 +121,7 @@ func discoverNodes() {
 		err = client.Call("NodeService.GeiNeighborNodes", daemon.node.RPCAddr, &newNodes)
 		client.Close()
 		if err != nil {
-			logger.Errorf("failed to call GeiNeighborNodes on %+v: %v", n, err)
+			common.Logger.Errorf("failed to call GeiNeighborNodes on %+v: %v", n, err)
 		}
 		for _, n := range newNodes {
 			addNodeChan <- &n.RPCAddr

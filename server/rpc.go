@@ -20,6 +20,8 @@ import (
 	"errors"
 	"net"
 	"net/rpc"
+
+	"github.com/lynn9388/blockchain-sharding/common"
 )
 
 type (
@@ -38,14 +40,14 @@ func newRPCListener(addr *net.TCPAddr) {
 	listener, err := net.ListenTCP("tcp", addr)
 	defer listener.Close()
 	if err != nil {
-		logger.Fatalf("failed to start RPC listener: %v", err)
+		common.Logger.Fatalf("failed to start RPC listener: %v", err)
 	}
-	logger.Infof("start RPC listener on %v", addr.String())
+	common.Logger.Infof("start RPC listener on %v", addr.String())
 
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			logger.Error("failed to accept a RPC connection")
+			common.Logger.Error("failed to accept a RPC connection")
 			continue
 		}
 		go rpc.ServeConn(conn)

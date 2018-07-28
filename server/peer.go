@@ -20,6 +20,8 @@ import (
 	"net/rpc"
 	"sync"
 	"time"
+
+	"github.com/lynn9388/blockchain-sharding/common"
 )
 
 type peer struct {
@@ -60,7 +62,7 @@ func addPeer(node *node) {
 		client := ping(node)
 		if client != nil {
 			peers[node.RPCAddr.String()] = peer{node, client}
-			logger.Debugf("add new peer: %v", node.RPCAddr.String())
+			common.Logger.Debugf("add new peer: %v", node.RPCAddr.String())
 		}
 	}
 }
@@ -81,11 +83,11 @@ func ping(node *node) *rpc.Client {
 	}
 	err = client.Call("PingPongService.PingPong", pingMsg, &ack)
 	if err != nil {
-		logger.Errorf("failed to call PingPong on %+v: %v", *node, err)
+		common.Logger.Errorf("failed to call PingPong on %+v: %v", *node, err)
 		return nil
 	}
 	if ack != pongMsg {
-		logger.Errorf("not a valid pong message: %v", ack)
+		common.Logger.Errorf("not a valid pong message: %v", ack)
 		return nil
 	}
 	return client

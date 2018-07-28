@@ -24,6 +24,7 @@ import (
 	"github.com/emicklei/go-restful"
 	"github.com/emicklei/go-restful-openapi"
 	"github.com/go-openapi/spec"
+	"github.com/lynn9388/blockchain-sharding/common"
 )
 
 type serverAPI int
@@ -41,8 +42,8 @@ func newAPIService(addr *net.TCPAddr) {
 	// You need to download the Swagger HTML5 assets and change the FilePath location in the config below.
 	http.Handle("/api/", http.StripPrefix("/api/", http.FileServer(http.Dir("/home/lynn/Documents/Git/swagger-ui/dist"))))
 
-	logger.Infof("start API service on %v, see API doc on http://%v/api/?url=http://%v/api.json", addr, addr, addr)
-	logger.Fatal(http.ListenAndServe(addr.String(), nil))
+	common.Logger.Infof("start API service on %v, see API doc on http://%v/api/?url=http://%v/api.json", addr, addr, addr)
+	common.Logger.Fatal(http.ListenAndServe(addr.String(), nil))
 }
 
 // WebService creates a new service that can handle REST requests for Server resources.
