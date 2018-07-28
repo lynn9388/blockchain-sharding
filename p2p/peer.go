@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package server
+package p2p
 
 import (
 	"net/rpc"
@@ -42,7 +42,7 @@ var (
 	peerMux        = sync.RWMutex{}
 )
 
-func newPeerManager() {
+func NewPeerManager() {
 	go connectPeers()
 
 	for {

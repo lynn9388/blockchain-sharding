@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package server
+package p2p
 
 import (
 	"net"
@@ -26,7 +26,7 @@ import (
 
 func TestPing(t *testing.T) {
 	addr := net.TCPAddr{IP: net.ParseIP(common.DefaultIP), Port: common.DefaultRPCPort}
-	go newRPCListener(&addr)
+	go NewRPCListener(&addr)
 	time.Sleep(1 * time.Second)
 	if client := ping(&common.Node{RPCAddr: addr}); client == nil {
 		t.FailNow()

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package server
+package p2p
 
 import (
 	"errors"
@@ -34,7 +34,7 @@ const (
 	pongMsg = "PONG"
 )
 
-func newRPCListener(addr *net.TCPAddr) {
+func NewRPCListener(addr *net.TCPAddr) {
 	rpc.Register(new(PingPongService))
 	rpc.Register(new(NodeService))
 	listener, err := net.ListenTCP("tcp", addr)

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package server
+package p2p
 
 import (
 	"net"
@@ -24,7 +24,7 @@ import (
 )
 
 func TestManageNodes(t *testing.T) {
-	go newNodeManager()
+	go NewNodeManager()
 	addr := &net.TCPAddr{IP: net.ParseIP(common.DefaultIP), Port: common.DefaultRPCPort}
 	addNodeChan <- addr
 	addNodeChan <- addr

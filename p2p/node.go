@@ -14,30 +14,30 @@
  * limitations under the License.
  */
 
-package server
+package p2p
 
 import (
 	"math/rand"
 	"net"
 	"net/rpc"
-	"sync"
 
 	"github.com/lynn9388/blockchain-sharding/common"
 )
 
 var (
 	nodes           = make(map[string]common.Node)
-	addNodeChan     = make(chan *net.TCPAddr, 5)
+	addNodeChan     = make(chan *net.TCPAddr)
 	removeNodeChan  = make(chan *net.TCPAddr)
+	getNodesSigChan = make(chan int)
+	getNodesChan    = make(chan *[]common.Node)
 	discoverSigChan = make(chan bool)
-	nodeMux         = sync.RWMutex{}
 
 	bootstraps = []net.TCPAddr{
-		{net.ParseIP("127.0.0.1"), 9389, ""},
+		{IP: net.ParseIP("127.0.0.1"), Port: 9389},
 	}
 )
 
-func newNodeManager() {
+func NewNodeManager() {
 	for _, addr := range bootstraps {
 		addNode(&addr)
 	}
@@ -48,6 +48,8 @@ func newNodeManager() {
 			addNode(addr)
 		case addr := <-removeNodeChan:
 			removeNode(addr)
+		case <-getNodesSigChan:
+			getNodesChan <- getShuffleNodes()
 		case <-discoverSigChan:
 			go discoverNodes()
 		}
@@ -56,34 +58,28 @@ func newNodeManager() {
 
 // addNode adds new node to managed node list if it does not exist
 func addNode(addr *net.TCPAddr) {
-	if !isSelf(addr) {
-		nodeMux.Lock()
+	if common.Server.Node.RPCAddr.String() != addr.String() {
 		if _, exists := nodes[addr.String()]; !exists {
-			nodes[addr.String()] = common.Node{*addr}
-			common.Logger.Debugf("add new node: %v", addr.String())
+			nodes[addr.String()] = common.Node{RPCAddr: *addr}
+			common.Logger.Debug("add new node: ", addr.String())
 		}
-		nodeMux.Unlock()
 	}
 }
 
 // removeNode removes node from managed node list if it exists
 func removeNode(addr *net.TCPAddr) {
-	nodeMux.Lock()
 	if _, exists := nodes[addr.String()]; exists {
 		delete(nodes, addr.String())
-		common.Logger.Debugf("remove node: %v", addr.String())
+		common.Logger.Debug("remove node: ", addr.String())
 	}
-	nodeMux.Unlock()
 }
 
 func getShuffleNodes() *[]common.Node {
-	nodeMux.RLock()
 	length := len(nodes)
 	tempNodes := make([]common.Node, 0, length)
 	for _, node := range nodes {
 		tempNodes = append(tempNodes, node)
 	}
-	nodeMux.RUnlock()
 
 	shuffleNodes := make([]common.Node, length)
 	perm := rand.Perm(length)

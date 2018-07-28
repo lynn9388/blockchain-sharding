@@ -17,8 +17,6 @@
 package server
 
 import (
-	"net"
-
 	"os"
 
 	"time"
@@ -27,6 +25,7 @@ import (
 	"syscall"
 
 	"github.com/lynn9388/blockchain-sharding/common"
+	"github.com/lynn9388/blockchain-sharding/p2p"
 )
 
 func StartServer() {
@@ -34,19 +33,15 @@ func StartServer() {
 	signal.Notify(sigChan, os.Interrupt, os.Kill, syscall.SIGTERM)
 
 	go newAPIService(&common.Server.APIAddr)
-	go newRPCListener(&common.Server.Node.RPCAddr)
+	go p2p.NewRPCListener(&common.Server.Node.RPCAddr)
 
 	time.Sleep(2 * time.Second)
 
-	go newNodeManager()
-	go newPeerManager()
+	go p2p.NewNodeManager()
+	go p2p.NewPeerManager()
 
 	select {
 	case <-sigChan:
 		common.Logger.Info("caught stop signal, quitting...")
 	}
-}
-
-func isSelf(addr *net.TCPAddr) bool {
-	return addr.String() == common.Server.Node.RPCAddr.String()
 }
