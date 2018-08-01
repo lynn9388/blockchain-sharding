@@ -58,7 +58,7 @@ func NewNodeManager() {
 
 // addNode adds new node to managed node list if it does not exist
 func addNode(addr *net.TCPAddr) {
-	if common.Server.Node.RPCAddr.String() != addr.String() {
+	if common.Server.RPCAddr.String() != addr.String() {
 		if _, exists := nodes[addr.String()]; !exists {
 			nodes[addr.String()] = common.Node{RPCAddr: *addr}
 			common.Logger.Debug("add new node: ", addr.String())
@@ -107,7 +107,7 @@ func discoverNodes() {
 			continue
 		}
 		newNodes := make([]common.Node, 0)
-		err = client.Call("NodeService.GeiNeighborNodes", common.Server.Node.RPCAddr, &newNodes)
+		err = client.Call("NodeService.GeiNeighborNodes", common.Server.RPCAddr, &newNodes)
 		client.Close()
 		if err != nil {
 			common.Logger.Errorf("failed to call GeiNeighborNodes on %+v: %v", n, err)

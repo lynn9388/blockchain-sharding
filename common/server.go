@@ -40,7 +40,7 @@ type (
 
 	server struct {
 		APIAddr net.TCPAddr
-		Node    Node
+		Node
 	}
 )
 

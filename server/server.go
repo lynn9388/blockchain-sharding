@@ -33,7 +33,7 @@ func StartServer() {
 	signal.Notify(sigChan, os.Interrupt, os.Kill, syscall.SIGTERM)
 
 	go newAPIService(&common.Server.APIAddr)
-	go p2p.NewRPCListener(&common.Server.Node.RPCAddr)
+	go p2p.NewRPCListener(&common.Server.RPCAddr)
 
 	time.Sleep(2 * time.Second)
 
