@@ -43,5 +43,5 @@ func init() {
 	serverCmd.Flags().IntVarP(&(config.APIPort), "api-port", "a", common.DefaultAPIPort, "which port the API service listen on")
 	serverCmd.Flags().IntVarP(&(config.RPCPort), "rpc-port", "r", common.DefaultRPCPort, "which port the blockchain node listen on")
 
-	common.ConfigServer(&config)
+	common.SetConfig(&config)
 }

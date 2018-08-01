@@ -66,7 +66,7 @@ func (s *serverAPI) webService() *restful.WebService {
 }
 
 func (s *serverAPI) findServerConfig(request *restful.Request, response *restful.Response) {
-	response.WriteEntity(common.ServerConfig)
+	response.WriteEntity(common.GetConfig())
 }
 
 func enrichSwaggerObject(swo *spec.Swagger) {

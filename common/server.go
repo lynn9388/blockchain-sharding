@@ -45,19 +45,22 @@ type (
 )
 
 var (
-	ServerConfig Config
-	Server       server
+	config Config
+	Server server
 )
 
 func init() {
-	ServerConfig = Config{IP: DefaultIP, APIPort: DefaultAPIPort, RPCPort: DefaultRPCPort}
-	ConfigServer(&ServerConfig)
+	SetConfig(&Config{IP: DefaultIP, APIPort: DefaultAPIPort, RPCPort: DefaultRPCPort})
 }
 
-func ConfigServer(config *Config) {
-	ServerConfig = *config
+func SetConfig(c *Config) {
+	config = *c
 
 	apiAddr := net.TCPAddr{IP: net.ParseIP(config.IP), Port: config.APIPort}
 	rpcAddr := net.TCPAddr{IP: net.ParseIP(config.IP), Port: config.RPCPort}
 	Server = server{APIAddr: apiAddr, Node: Node{RPCAddr: rpcAddr}}
+}
+
+func GetConfig() *Config {
+	return &config
 }
