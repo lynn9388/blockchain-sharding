@@ -100,10 +100,10 @@ func connectPeers() {
 		peerMux.RUnlock()
 		if length < maxPeerNum {
 			shuffleNodes := getShuffleNodes()
-			if len(*shuffleNodes) > maxPeerNum {
-				*shuffleNodes = (*shuffleNodes)[:maxPeerNum]
+			if len(shuffleNodes) > maxPeerNum {
+				shuffleNodes = shuffleNodes[:maxPeerNum]
 			}
-			for _, n := range *shuffleNodes {
+			for _, n := range shuffleNodes {
 				addPeerChan <- &n
 			}
 		}

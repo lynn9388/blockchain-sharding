@@ -21,6 +21,8 @@ import (
 	"net"
 	"net/rpc"
 
+	"time"
+
 	"github.com/lynn9388/blockchain-sharding/common"
 )
 
@@ -28,8 +30,8 @@ var (
 	nodes           = make(map[string]common.Node)
 	addNodeChan     = make(chan *net.TCPAddr)
 	removeNodeChan  = make(chan *net.TCPAddr)
-	getNodesSigChan = make(chan int)
-	getNodesChan    = make(chan *[]common.Node)
+	getNodesSigChan = make(chan struct{})
+	getNodesChan    = make(chan []common.Node)
 	discoverSigChan = make(chan bool)
 
 	bootstraps = []net.TCPAddr{
@@ -49,14 +51,14 @@ func NewNodeManager() {
 		case addr := <-removeNodeChan:
 			removeNode(addr)
 		case <-getNodesSigChan:
-			getNodesChan <- getShuffleNodes()
+			getNodesChan <- getNodes()
 		case <-discoverSigChan:
 			go discoverNodes()
 		}
 	}
 }
 
-// addNode adds new node to managed node list if it does not exist
+// addNode adds new node to managed node list if it does not exist, it's not safe for concurrent use
 func addNode(addr *net.TCPAddr) {
 	if common.Server.RPCAddr.String() != addr.String() {
 		if _, exists := nodes[addr.String()]; !exists {
@@ -66,7 +68,7 @@ func addNode(addr *net.TCPAddr) {
 	}
 }
 
-// removeNode removes node from managed node list if it exists
+// removeNode removes node from managed node list if it exists, it's not safe for concurrent use
 func removeNode(addr *net.TCPAddr) {
 	if _, exists := nodes[addr.String()]; exists {
 		delete(nodes, addr.String())
@@ -74,19 +76,27 @@ func removeNode(addr *net.TCPAddr) {
 	}
 }
 
-func getShuffleNodes() *[]common.Node {
-	length := len(nodes)
-	tempNodes := make([]common.Node, 0, length)
+// getNodes returns a slice of all nodes, it's not safe for concurrent use
+func getNodes() []common.Node {
+	n := make([]common.Node, 0, len(nodes))
 	for _, node := range nodes {
-		tempNodes = append(tempNodes, node)
+		n = append(n, node)
 	}
+	return n
+}
 
-	shuffleNodes := make([]common.Node, length)
-	perm := rand.Perm(length)
+// getShuffleNodes returns a shuffled node list, it's safe for concurrent use
+func getShuffleNodes() []common.Node {
+	getNodesSigChan <- struct{}{}
+	nodes := <-getNodesChan
+
+	shuffleNodes := make([]common.Node, len(nodes))
+	rand.Seed(time.Now().UnixNano())
+	perm := rand.Perm(len(nodes))
 	for i, v := range perm {
-		shuffleNodes[v] = tempNodes[i]
+		shuffleNodes[i] = nodes[v]
 	}
-	return &shuffleNodes
+	return shuffleNodes
 }
 
 func connectNode(node *common.Node) (*rpc.Client, error) {
@@ -100,7 +110,7 @@ func connectNode(node *common.Node) (*rpc.Client, error) {
 
 func discoverNodes() {
 	shuffleNodes := getShuffleNodes()
-	for _, n := range *shuffleNodes {
+	for _, n := range shuffleNodes {
 		client, err := connectNode(&n)
 		if err != nil {
 			removeNodeChan <- &n.RPCAddr

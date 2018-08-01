@@ -67,10 +67,10 @@ func (t *NodeService) GeiNeighborNodes(source *net.TCPAddr, nodes *[]common.Node
 	addNodeChan <- source
 	shuffleNodes := getShuffleNodes()
 
-	length := len(*shuffleNodes)
+	length := len(shuffleNodes)
 	if maxPeerNum < length {
 		length = maxPeerNum
 	}
-	*nodes = (*shuffleNodes)[:length]
+	*nodes = shuffleNodes[:length]
 	return nil
 }
