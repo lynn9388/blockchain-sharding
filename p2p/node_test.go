@@ -19,20 +19,30 @@ package p2p
 import (
 	"net"
 	"testing"
-
-	"github.com/lynn9388/blockchain-sharding/common"
 )
 
-func TestManageNodes(t *testing.T) {
-	go NewNodeManager()
-	addr := &net.TCPAddr{IP: net.ParseIP(common.DefaultIP), Port: common.DefaultRPCPort}
+func TestNewNodeManager(t *testing.T) {
+	NewNodeManager()
+	for _, addr := range bootstraps {
+		removeNodeChan <- &addr
+	}
+
+	addr := &net.TCPAddr{IP: net.ParseIP("8.8.8.8"), Port: 80}
 	addNodeChan <- addr
+	if len(getShuffleNodes()) != 1 {
+		t.Errorf("after \"addNodeChan <- addr\", len(nodes) = %v", len(getShuffleNodes()))
+	}
 	addNodeChan <- addr
-	if len(nodes) != 1 {
-		t.Errorf("after \"addNodeChan <- addr\" twice, len(nodes) = %v", len(nodes))
+	if len(getShuffleNodes()) != 1 {
+		t.Errorf("after \"addNodeChan <- addr\" twice, len(nodes) = %v", len(getShuffleNodes()))
+	}
+
+	removeNodeChan <- addr
+	if len(getShuffleNodes()) != 0 {
+		t.Errorf("after \"removeNodeChan <- addr\" , len(nodes) = %v", len(getShuffleNodes()))
 	}
 	removeNodeChan <- addr
-	if len(nodes) != 0 {
-		t.Errorf("after \"removeNodeChan <- addr\" , len(nodes) = %v", len(nodes))
+	if len(getShuffleNodes()) != 0 {
+		t.Errorf("after \"removeNodeChan <- addr\" twice, len(nodes) = %v", len(getShuffleNodes()))
 	}
 }

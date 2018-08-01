@@ -44,18 +44,20 @@ func NewNodeManager() {
 		addNode(&addr)
 	}
 
-	for {
-		select {
-		case addr := <-addNodeChan:
-			addNode(addr)
-		case addr := <-removeNodeChan:
-			removeNode(addr)
-		case <-getNodesSigChan:
-			getNodesChan <- getNodes()
-		case <-discoverSigChan:
-			go discoverNodes()
+	go func() {
+		for {
+			select {
+			case addr := <-addNodeChan:
+				addNode(addr)
+			case addr := <-removeNodeChan:
+				removeNode(addr)
+			case <-getNodesSigChan:
+				getNodesChan <- getNodes()
+			case <-discoverSigChan:
+				go discoverNodes()
+			}
 		}
-	}
+	}()
 }
 
 // addNode adds new node to managed node list if it does not exist, it's not safe for concurrent use
