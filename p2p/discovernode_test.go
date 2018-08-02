@@ -22,18 +22,30 @@ import (
 	"context"
 
 	"net"
-	"strconv"
 
 	"github.com/lynn9388/blockchain-sharding/common"
 	"google.golang.org/grpc"
 )
 
-func TestDiscoverNodeServer_Ping(t *testing.T) {
-	rpcAddr := net.JoinHostPort(common.DefaultIP, strconv.Itoa(common.DefaultRPCPort))
-	go NewRPCListener(rpcAddr)
-	<-RPCStartChan
+func createDiscoverNodeServer(t *testing.T) (*net.Listener, *grpc.Server) {
+	lis, err := net.Listen("tcp", common.GetServerInfo().RPCAddr)
+	if err != nil {
+		t.Fatalf("failed to listen: %v", err)
+	}
 
-	conn, err := grpc.Dial(rpcAddr, grpc.WithInsecure())
+	server := grpc.NewServer()
+	RegisterDiscoverNodeServer(server, &discoverNodeServer{})
+
+	return &lis, server
+}
+
+func TestDiscoverNodeServer_Ping(t *testing.T) {
+	lis, server := createDiscoverNodeServer(t)
+	defer server.Stop()
+
+	go server.Serve(*lis)
+
+	conn, err := grpc.Dial(common.GetServerInfo().RPCAddr, grpc.WithInsecure())
 	if err != nil {
 		t.Fatalf("failed to dial: %v", err)
 	}
