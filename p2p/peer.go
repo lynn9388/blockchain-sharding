@@ -18,7 +18,6 @@ package p2p
 
 import (
 	"net"
-	"net/rpc"
 	"sync"
 	"time"
 
@@ -63,25 +62,6 @@ func removePeer(addr *net.TCPAddr) {
 		delete(peers, addr.String())
 		common.Logger.Debug("remove peer: ", addr.String())
 	}
-}
-
-// ping tests if a node is reachable and returns connected client
-func ping(node *common.Node) *rpc.Client {
-	ack := ""
-	client, err := connectNode(node)
-	if err != nil {
-		return nil
-	}
-	err = client.Call("PingPongService.PingPong", pingMsg, &ack)
-	if err != nil {
-		common.Logger.Errorf("failed to call PingPong on %+v: %v", *node, err)
-		return nil
-	}
-	if ack != pongMsg {
-		common.Logger.Errorf("not a valid pong message: %v", ack)
-		return nil
-	}
-	return client
 }
 
 func connectPeers() {

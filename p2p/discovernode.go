@@ -15,3 +15,18 @@
  */
 
 package p2p
+
+import (
+	"github.com/pkg/errors"
+	"golang.org/x/net/context"
+)
+
+type discoverNodeServer struct {
+}
+
+func (s *discoverNodeServer) Ping(ctx context.Context, ping *PingPong) (*PingPong, error) {
+	if ping.Message != PingPong_PING {
+		return nil, errors.New("invalid ping message: " + ping.Message.String())
+	}
+	return &PingPong{Message: PingPong_PONG}, nil
+}

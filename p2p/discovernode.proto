@@ -14,4 +14,19 @@
  * limitations under the License.
  */
 
-package p2p
+syntax = "proto3";
+
+package p2p;
+
+service DiscoverNode {
+    rpc Ping (PingPong) returns (PingPong) {
+    }
+}
+
+message PingPong {
+    enum Message {
+        PING = 0;
+        PONG = 1;
+    }
+    Message message = 1;
+}

@@ -17,43 +17,33 @@
 package p2p
 
 import (
+	"testing"
+
+	"context"
+
 	"net"
+	"strconv"
 
 	"github.com/lynn9388/blockchain-sharding/common"
 	"google.golang.org/grpc"
 )
 
-type (
-	NodeService int
-)
+func TestDiscoverNodeServer_Ping(t *testing.T) {
+	rpcAddr := net.JoinHostPort(common.DefaultIP, strconv.Itoa(common.DefaultRPCPort))
+	go NewRPCListener(rpcAddr)
+	<-RPCStartChan
 
-var (
-	RPCStartChan = make(chan struct{})
-)
-
-func NewRPCListener(rpcAddr string) {
-	lis, err := net.Listen("tcp", rpcAddr)
+	conn, err := grpc.Dial(rpcAddr, grpc.WithInsecure())
 	if err != nil {
-		common.Logger.Fatalf("failed to listen: %v", err)
+		t.Fatalf("failed to dial: %v", err)
 	}
-	defer lis.Close()
-
-	server := grpc.NewServer()
-	RegisterDiscoverNodeServer(server, &discoverNodeServer{})
-
-	common.Logger.Infof("start RPC listener on %v", rpcAddr)
-	RPCStartChan <- struct{}{}
-	server.Serve(lis)
-}
-
-func (t *NodeService) GeiNeighborNodes(source *net.TCPAddr, nodes *[]common.Node) error {
-	addNodeChan <- &common.Node{RPCAddr: source.String()}
-	shuffleNodes := getShuffleNodes()
-
-	length := len(shuffleNodes)
-	if maxPeerNum < length {
-		length = maxPeerNum
+	defer conn.Close()
+	client := NewDiscoverNodeClient(conn)
+	pong, err := client.Ping(context.Background(), &PingPong{Message: PingPong_PING})
+	if err != nil {
+		t.Fatal(err)
 	}
-	*nodes = shuffleNodes[:length]
-	return nil
+	if pong.Message != PingPong_PONG {
+		t.Fatalf("invalid pong message: %v", pong.Message)
+	}
 }
