@@ -18,111 +18,92 @@ package p2p
 
 import (
 	"math/rand"
-	"net/rpc"
-
+	"sync"
 	"time"
 
 	"github.com/lynn9388/blockchain-sharding/common"
 )
 
 var (
-	nodes           = make(map[string]common.Node)
-	addNodeChan     = make(chan *common.Node)
-	removeNodeChan  = make(chan *common.Node)
-	getNodesSigChan = make(chan struct{})
-	getNodesChan    = make(chan []common.Node)
-	discoverSigChan = make(chan bool)
+	nodes    = make(map[string]common.Node)
+	nodesMux = sync.RWMutex{}
 
 	bootstraps = []string{"127.0.0.1:9388"}
 )
 
-func NewNodeManager() {
-	for _, addr := range bootstraps {
-		addNode(&common.Node{RPCAddr: addr})
-	}
-
-	go func() {
-		for {
-			select {
-			case node := <-addNodeChan:
-				addNode(node)
-			case node := <-removeNodeChan:
-				removeNode(node)
-			case <-getNodesSigChan:
-				getNodesChan <- getNodes()
-			case <-discoverSigChan:
-				go discoverNodes()
-			}
-		}
-	}()
-}
-
-// addNode adds new node to managed node list if it does not exist, it's not safe for concurrent use
+// addNode adds new node to managed node list if it does not exist
 func addNode(n *common.Node) {
+	nodesMux.Lock()
+	defer nodesMux.Unlock()
 	if common.Server.RPCAddr != n.RPCAddr {
 		if _, exists := nodes[n.RPCAddr]; !exists {
 			nodes[n.RPCAddr] = *n
-			common.Logger.Debug("add new node: ", n.RPCAddr)
+			common.Logger.Debug("added new node: ", n.RPCAddr)
 		}
 	}
 }
 
-// removeNode removes node from managed node list if it exists, it's not safe for concurrent use
+// removeNode removes node from managed node list if it exists
 func removeNode(n *common.Node) {
+	nodesMux.Lock()
+	defer nodesMux.Unlock()
 	if _, exists := nodes[n.RPCAddr]; exists {
 		delete(nodes, n.RPCAddr)
-		common.Logger.Debug("remove node: ", n.RPCAddr)
+		common.Logger.Debug("removed node: ", n.RPCAddr)
 	}
 }
 
-// getNodes returns a slice of all nodes, it's not safe for concurrent use
-func getNodes() []common.Node {
-	n := make([]common.Node, 0, len(nodes))
-	for _, node := range nodes {
-		n = append(n, node)
+// getNodes returns a copy of nodes
+func getNodes() map[string]common.Node {
+	nodesMux.RLock()
+	defer nodesMux.RUnlock()
+	ns := make(map[string]common.Node)
+	for k, v := range nodes {
+		ns[k] = v
 	}
-	return n
+	return ns
 }
 
-// getShuffleNodes returns a shuffled node list, it's safe for concurrent use
+// getShuffleNodes returns a shuffled node list
 func getShuffleNodes() []common.Node {
-	getNodesSigChan <- struct{}{}
-	nodes := <-getNodesChan
+	ns := getNodes()
 
-	shuffleNodes := make([]common.Node, len(nodes))
+	shuffleNodes := make([]common.Node, len(ns))
 	rand.Seed(time.Now().UnixNano())
-	perm := rand.Perm(len(nodes))
-	for i, v := range perm {
-		shuffleNodes[i] = nodes[v]
+	perm := rand.Perm(len(ns))
+
+	i := 0
+	for _, v := range ns {
+		shuffleNodes[perm[i]] = v
+		i++
 	}
+
 	return shuffleNodes
 }
 
-func connectNode(node *common.Node) (*rpc.Client, error) {
-	client, err := rpc.Dial("tcp", node.RPCAddr)
-	if err != nil {
-		common.Logger.Error(err)
-		return nil, err
-	}
-	return client, nil
-}
-
-func discoverNodes() {
-	shuffleNodes := getShuffleNodes()
-	for _, n := range shuffleNodes {
-		client, err := connectNode(&n)
-		if err != nil {
-			removeNodeChan <- &common.Node{RPCAddr: n.RPCAddr}
-			continue
-		}
-		newNodes := make([]common.Node, 0)
-		err = client.Call("NodeService.GeiNeighborNodes", common.Server.RPCAddr, &newNodes)
-		client.Close()
-		if err != nil {
-			common.Logger.Errorf("failed to call GeiNeighborNodes on %+v: %v", n, err)
-		}
-		for _, n := range newNodes {
-			addNodeChan <- &common.Node{RPCAddr: n.RPCAddr}
-		}
-	}
-}
+//func discoverNodes() {
+//	ps := getPeers()
+//	getNodesSigChan <- struct{}{}
+//	ns :=
+//	for p := range ps {
+//		if _, exists :=
+//	}
+//
+//	shuffleNodes := getShuffleNodes()
+//	for _, n := range shuffleNodes {
+//		client, err := connectNode(&n)
+//		if err != nil {
+//			removeNodeChan <- &common.Node{RPCAddr: n.RPCAddr}
+//			continue
+//		}
+//		newNodes := make([]common.Node, 0)
+//		err = client.Call("NodeService.GeiNeighborNodes", common.Server.RPCAddr, &newNodes)
+//		client.Close()
+//		if err != nil {
+//			common.Logger.Errorf("failed to call GeiNeighborNodes on %+v: %v", n, err)
+//		}
+//		for _, n := range newNodes {
+//			addNodeChan <- &common.Node{RPCAddr: n.RPCAddr}
+//		}
+//	}
+//}

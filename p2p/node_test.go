@@ -19,31 +19,64 @@ package p2p
 import (
 	"testing"
 
+	"net"
+	"strconv"
+
 	"github.com/lynn9388/blockchain-sharding/common"
 )
 
-func TestNewNodeManager(t *testing.T) {
-	NewNodeManager()
-	for _, addr := range bootstraps {
-		removeNodeChan <- &common.Node{RPCAddr: addr}
+func TestAddNode(t *testing.T) {
+	node := &common.Node{RPCAddr: "8.8.8.8:80"}
+	addNode(node)
+	if len(nodes) != 1 {
+		t.Errorf("after \"addNode(node)\", len(nodes) = %v", len(nodes))
+	}
+	addNode(node)
+	if len(nodes) != 1 {
+		t.Errorf("after \"addNode(node)\" twice, len(nodes) = %v", len(nodes))
+	}
+}
+
+func TestRemoveNode(t *testing.T) {
+	node := &common.Node{RPCAddr: "8.8.8.8:80"}
+	addNode(node)
+	removeNode(node)
+	if len(nodes) != 0 {
+		t.Errorf("after \"removeNode(node)\" , len(nodes) = %v", len(nodes))
+	}
+	removeNode(node)
+	if len(nodes) != 0 {
+		t.Errorf("after \"removeNode(node)\" twice, len(nodes) = %v", len(nodes))
+	}
+}
+
+func TestGetNodes(t *testing.T) {
+	if len(getNodes()) != 0 {
+		t.Errorf("\"getNodes()\" from empty nodes, len(getNodes()) = %v", len(getNodes()))
 	}
 
 	node := &common.Node{RPCAddr: "8.8.8.8:80"}
-	addNodeChan <- node
-	if len(getShuffleNodes()) != 1 {
-		t.Errorf("after \"addNodeChan <- node\", len(nodes) = %v", len(getShuffleNodes()))
+	addNode(node)
+	if len(getNodes()) != 1 {
+		t.Errorf("\"getNodes()\" from nodes (1 node), len(getNodes()) = %v", len(getNodes()))
 	}
-	addNodeChan <- node
-	if len(getShuffleNodes()) != 1 {
-		t.Errorf("after \"addNodeChan <- node\" twice, len(nodes) = %v", len(getShuffleNodes()))
-	}
+}
 
-	removeNodeChan <- node
-	if len(getShuffleNodes()) != 0 {
-		t.Errorf("after \"removeNodeChan <- node\" , len(nodes) = %v", len(getShuffleNodes()))
+func TestGetShuffleNodes(t *testing.T) {
+	num := 10
+	for port := 1; port < num; port++ {
+		addNode(&common.Node{RPCAddr: net.JoinHostPort("8.8.8.8", strconv.Itoa(port))})
 	}
-	removeNodeChan <- node
-	if len(getShuffleNodes()) != 0 {
-		t.Errorf("after \"removeNodeChan <- node\" twice, len(nodes) = %v", len(getShuffleNodes()))
+	sns1 := getShuffleNodes()
+	sns2 := getShuffleNodes()
+
+	diff := 0
+	for i := 0; i < num; i++ {
+		if sns1[i].RPCAddr != sns2[i].RPCAddr {
+			diff++
+		}
+	}
+	if float32(diff)/float32(num) < 0.5 {
+		t.FailNow()
 	}
 }
