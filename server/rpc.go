@@ -14,46 +14,34 @@
  * limitations under the License.
  */
 
-package p2p
+package server
 
 import (
 	"net"
 
 	"github.com/lynn9388/blockchain-sharding/common"
+	"github.com/lynn9388/blockchain-sharding/p2p"
 	"google.golang.org/grpc"
 )
 
-type (
-	NodeService int
-)
+var rpcServer *grpc.Server
 
-var (
-	RPCStartChan = make(chan struct{})
-)
-
-func NewRPCListener(rpcAddr string) {
-	lis, err := net.Listen("tcp", rpcAddr)
+func startRPCServer() {
+	lis, err := net.Listen("tcp", common.GetServerInfo().RPCAddr)
 	if err != nil {
 		common.Logger.Fatalf("failed to listen: %v", err)
 	}
-	defer lis.Close()
 
-	server := grpc.NewServer()
-	RegisterDiscoverNodeServer(server, &discoverNodeServer{})
+	rpcServer = grpc.NewServer()
+	p2p.RegisterDiscoverNodeServer(rpcServer, p2p.NewDiscoverNodeServer())
 
-	common.Logger.Infof("start RPC listener on %v", rpcAddr)
-	RPCStartChan <- struct{}{}
-	server.Serve(lis)
+	common.Logger.Infof("RPC server listening at: %v", common.GetServerInfo().RPCAddr)
+	go rpcServer.Serve(lis)
 }
 
-func (t *NodeService) GeiNeighborNodes(source *net.TCPAddr, nodes *[]common.Node) error {
-	addNodeChan <- &common.Node{RPCAddr: source.String()}
-	shuffleNodes := getShuffleNodes()
-
-	length := len(shuffleNodes)
-	if maxPeerNum < length {
-		length = maxPeerNum
+func stopRPCServer() {
+	if rpcServer != nil {
+		rpcServer.Stop()
+		common.Logger.Info("RPC server stopped")
 	}
-	*nodes = shuffleNodes[:length]
-	return nil
 }

@@ -61,7 +61,7 @@ func TestDiscoverNodeServer_Ping(t *testing.T) {
 }
 
 func TestDiscoverNodeServer_GeiNeighborNodes(t *testing.T) {
-	for port := 1; port <= maxShareNodesNum; port++ {
+	for port := 80; port < 80+maxShareNodesNum; port++ {
 		addNode(&common.Node{RPCAddr: net.JoinHostPort("8.8.8.8", strconv.Itoa(port))})
 	}
 

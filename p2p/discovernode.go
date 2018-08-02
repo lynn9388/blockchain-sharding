@@ -30,6 +30,10 @@ const (
 type discoverNodeServer struct {
 }
 
+func NewDiscoverNodeServer() *discoverNodeServer {
+	return &discoverNodeServer{}
+}
+
 func (s *discoverNodeServer) Ping(ctx context.Context, ping *PingPong) (*PingPong, error) {
 	if ping.Message != PingPong_PING {
 		return nil, errors.New("invalid ping message: " + ping.Message.String())

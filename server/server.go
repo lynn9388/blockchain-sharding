@@ -30,7 +30,7 @@ func StartServer() {
 	signal.Notify(sigChan, os.Interrupt, os.Kill, syscall.SIGTERM)
 
 	//go newAPIService(&common.Server.APIAddr)
-	//go p2p.NewRPCListener(&common.Server.RPCAddr)
+	startRPCServer()
 
 	time.Sleep(2 * time.Second)
 
@@ -39,6 +39,7 @@ func StartServer() {
 
 	select {
 	case <-sigChan:
+		stopRPCServer()
 		common.Logger.Info("caught stop signal, quitting...")
 	}
 }

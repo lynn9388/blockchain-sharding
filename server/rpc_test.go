@@ -14,4 +14,4 @@
  * limitations under the License.
  */
 
-package p2p
+package server
