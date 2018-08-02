@@ -17,11 +17,11 @@
 package p2p
 
 import (
-	"testing"
-
 	"context"
-
+	"io"
 	"net"
+	"strconv"
+	"testing"
 
 	"github.com/lynn9388/blockchain-sharding/common"
 	"google.golang.org/grpc"
@@ -57,5 +57,42 @@ func TestDiscoverNodeServer_Ping(t *testing.T) {
 	}
 	if pong.Message != PingPong_PONG {
 		t.Fatalf("invalid pong message: %v", pong.Message)
+	}
+}
+
+func TestDiscoverNodeServer_GeiNeighborNodes(t *testing.T) {
+	for port := 1; port <= maxShareNodesNum; port++ {
+		addNode(&common.Node{RPCAddr: net.JoinHostPort("8.8.8.8", strconv.Itoa(port))})
+	}
+
+	lis, server := createDiscoverNodeServer(t)
+	defer server.Stop()
+
+	go server.Serve(*lis)
+
+	conn, err := grpc.Dial(common.GetServerInfo().RPCAddr, grpc.WithInsecure())
+	if err != nil {
+		t.Fatalf("failed to dial: %v", err)
+	}
+	defer conn.Close()
+	client := NewDiscoverNodeClient(conn)
+	stream, err := client.GeiNeighborNodes(context.Background(), &common.GetServerInfo().Node)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ns := make(map[string]*common.Node)
+	for {
+		n, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+		ns[n.RPCAddr] = n
+	}
+	if len(ns) != maxShareNodesNum {
+		t.FailNow()
 	}
 }

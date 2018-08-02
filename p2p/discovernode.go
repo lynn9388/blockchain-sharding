@@ -17,8 +17,14 @@
 package p2p
 
 import (
-	"github.com/pkg/errors"
+	"errors"
+
+	"github.com/lynn9388/blockchain-sharding/common"
 	"golang.org/x/net/context"
+)
+
+const (
+	maxShareNodesNum = 10
 )
 
 type discoverNodeServer struct {
@@ -29,4 +35,23 @@ func (s *discoverNodeServer) Ping(ctx context.Context, ping *PingPong) (*PingPon
 		return nil, errors.New("invalid ping message: " + ping.Message.String())
 	}
 	return &PingPong{Message: PingPong_PONG}, nil
+}
+
+func (s *discoverNodeServer) GeiNeighborNodes(n *common.Node, stream DiscoverNode_GeiNeighborNodesServer) error {
+	addNode(n)
+
+	ns := getShuffleNodes()
+	count := 0
+	for _, n := range ns {
+		if count >= maxShareNodesNum {
+			break
+		}
+		if !isBootstrap(n.RPCAddr) {
+			if err := stream.Send(&n); err != nil {
+				return err
+			}
+			count++
+		}
+	}
+	return nil
 }

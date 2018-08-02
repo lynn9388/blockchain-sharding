@@ -15,11 +15,14 @@
  */
 
 syntax = "proto3";
-
 package p2p;
+
+import "github.com/lynn9388/blockchain-sharding/common/node.proto";
 
 service DiscoverNode {
     rpc Ping (PingPong) returns (PingPong) {
+    }
+    rpc GeiNeighborNodes (common.Node) returns (stream common.Node) {
     }
 }
 
