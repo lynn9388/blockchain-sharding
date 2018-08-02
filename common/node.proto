@@ -14,34 +14,10 @@
  * limitations under the License.
  */
 
-package server
+syntax = "proto3";
 
-import (
-	"os"
+package common;
 
-	"time"
-
-	"os/signal"
-	"syscall"
-
-	"github.com/lynn9388/blockchain-sharding/common"
-	"github.com/lynn9388/blockchain-sharding/p2p"
-)
-
-func StartServer() {
-	sigChan := make(chan os.Signal)
-	signal.Notify(sigChan, os.Interrupt, os.Kill, syscall.SIGTERM)
-
-	//go newAPIService(&common.Server.APIAddr)
-	//go p2p.NewRPCListener(&common.Server.RPCAddr)
-
-	time.Sleep(2 * time.Second)
-
-	go p2p.NewNodeManager()
-	go p2p.NewPeerManager()
-
-	select {
-	case <-sigChan:
-		common.Logger.Info("caught stop signal, quitting...")
-	}
+message Node {
+    string RPCAddr = 1;
 }

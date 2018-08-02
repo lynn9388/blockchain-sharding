@@ -18,7 +18,6 @@ package p2p
 
 import (
 	"math/rand"
-	"net"
 	"net/rpc"
 
 	"time"
@@ -28,29 +27,27 @@ import (
 
 var (
 	nodes           = make(map[string]common.Node)
-	addNodeChan     = make(chan *net.TCPAddr)
-	removeNodeChan  = make(chan *net.TCPAddr)
+	addNodeChan     = make(chan *common.Node)
+	removeNodeChan  = make(chan *common.Node)
 	getNodesSigChan = make(chan struct{})
 	getNodesChan    = make(chan []common.Node)
 	discoverSigChan = make(chan bool)
 
-	bootstraps = []net.TCPAddr{
-		{IP: net.ParseIP("127.0.0.1"), Port: 9389},
-	}
+	bootstraps = []string{"127.0.0.1:9388"}
 )
 
 func NewNodeManager() {
 	for _, addr := range bootstraps {
-		addNode(&addr)
+		addNode(&common.Node{RPCAddr: addr})
 	}
 
 	go func() {
 		for {
 			select {
-			case addr := <-addNodeChan:
-				addNode(addr)
-			case addr := <-removeNodeChan:
-				removeNode(addr)
+			case node := <-addNodeChan:
+				addNode(node)
+			case node := <-removeNodeChan:
+				removeNode(node)
 			case <-getNodesSigChan:
 				getNodesChan <- getNodes()
 			case <-discoverSigChan:
@@ -61,20 +58,20 @@ func NewNodeManager() {
 }
 
 // addNode adds new node to managed node list if it does not exist, it's not safe for concurrent use
-func addNode(addr *net.TCPAddr) {
-	if common.Server.RPCAddr.String() != addr.String() {
-		if _, exists := nodes[addr.String()]; !exists {
-			nodes[addr.String()] = common.Node{RPCAddr: *addr}
-			common.Logger.Debug("add new node: ", addr.String())
+func addNode(n *common.Node) {
+	if common.Server.RPCAddr != n.RPCAddr {
+		if _, exists := nodes[n.RPCAddr]; !exists {
+			nodes[n.RPCAddr] = *n
+			common.Logger.Debug("add new node: ", n.RPCAddr)
 		}
 	}
 }
 
 // removeNode removes node from managed node list if it exists, it's not safe for concurrent use
-func removeNode(addr *net.TCPAddr) {
-	if _, exists := nodes[addr.String()]; exists {
-		delete(nodes, addr.String())
-		common.Logger.Debug("remove node: ", addr.String())
+func removeNode(n *common.Node) {
+	if _, exists := nodes[n.RPCAddr]; exists {
+		delete(nodes, n.RPCAddr)
+		common.Logger.Debug("remove node: ", n.RPCAddr)
 	}
 }
 
@@ -102,7 +99,7 @@ func getShuffleNodes() []common.Node {
 }
 
 func connectNode(node *common.Node) (*rpc.Client, error) {
-	client, err := rpc.Dial("tcp", node.RPCAddr.String())
+	client, err := rpc.Dial("tcp", node.RPCAddr)
 	if err != nil {
 		common.Logger.Error(err)
 		return nil, err
@@ -115,7 +112,7 @@ func discoverNodes() {
 	for _, n := range shuffleNodes {
 		client, err := connectNode(&n)
 		if err != nil {
-			removeNodeChan <- &n.RPCAddr
+			removeNodeChan <- &common.Node{RPCAddr: n.RPCAddr}
 			continue
 		}
 		newNodes := make([]common.Node, 0)
@@ -125,7 +122,7 @@ func discoverNodes() {
 			common.Logger.Errorf("failed to call GeiNeighborNodes on %+v: %v", n, err)
 		}
 		for _, n := range newNodes {
-			addNodeChan <- &n.RPCAddr
+			addNodeChan <- &common.Node{RPCAddr: n.RPCAddr}
 		}
 	}
 }

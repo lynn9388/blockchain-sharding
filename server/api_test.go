@@ -18,10 +18,7 @@ package server
 
 import (
 	"testing"
-
-	"github.com/lynn9388/blockchain-sharding/common"
 )
 
 func TestNewAPIService(t *testing.T) {
-	newAPIService(&common.Server.APIAddr)
 }

@@ -49,9 +49,9 @@ func NewPeerManager() {
 func addPeer(p *peer) {
 	peersMux.Lock()
 	defer peersMux.Unlock()
-	if _, exists := peers[p.RPCAddr.String()]; !exists {
-		peers[p.RPCAddr.String()] = *p
-		common.Logger.Debug("add new peer: ", p.RPCAddr.String())
+	if _, exists := peers[p.RPCAddr]; !exists {
+		peers[p.RPCAddr] = *p
+		common.Logger.Debug("add new peer: ", p.RPCAddr)
 	}
 }
 

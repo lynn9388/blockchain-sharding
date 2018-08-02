@@ -28,7 +28,7 @@ func TestPing(t *testing.T) {
 	addr := net.TCPAddr{IP: net.ParseIP(common.DefaultIP), Port: common.DefaultRPCPort}
 	go NewRPCListener(&addr)
 	time.Sleep(1 * time.Second)
-	if client := ping(&common.Node{RPCAddr: addr}); client == nil {
+	if client := ping(&common.Node{RPCAddr: addr.String()}); client == nil {
 		t.FailNow()
 	}
 }

@@ -18,6 +18,7 @@ package common
 
 import (
 	"net"
+	"strconv"
 )
 
 const (
@@ -33,13 +34,8 @@ type (
 		RPCPort int    `json:"rpcport" description:"port of the RPC listener" default:"9389"`
 	}
 
-	// A node represents a potential peer on the network
-	Node struct {
-		RPCAddr net.TCPAddr
-	}
-
 	server struct {
-		APIAddr net.TCPAddr
+		APIAddr string
 		Node
 	}
 )
@@ -56,8 +52,11 @@ func init() {
 func SetConfig(c *Config) {
 	config = *c
 
-	apiAddr := net.TCPAddr{IP: net.ParseIP(config.IP), Port: config.APIPort}
-	rpcAddr := net.TCPAddr{IP: net.ParseIP(config.IP), Port: config.RPCPort}
+	if net.ParseIP(config.IP) == nil {
+		Logger.Fatal("failed to parse ip: ", config.IP)
+	}
+	apiAddr := net.JoinHostPort(config.IP, strconv.Itoa(config.APIPort))
+	rpcAddr := net.JoinHostPort(config.IP, strconv.Itoa(config.RPCPort))
 	Server = server{APIAddr: apiAddr, Node: Node{RPCAddr: rpcAddr}}
 }
 

@@ -64,7 +64,7 @@ func (t *PingPongService) PingPong(msg *string, ack *string) error {
 }
 
 func (t *NodeService) GeiNeighborNodes(source *net.TCPAddr, nodes *[]common.Node) error {
-	addNodeChan <- source
+	addNodeChan <- &common.Node{RPCAddr: source.String()}
 	shuffleNodes := getShuffleNodes()
 
 	length := len(shuffleNodes)
