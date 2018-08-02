@@ -26,6 +26,8 @@ import (
 )
 
 func TestAddNode(t *testing.T) {
+	nodes = make(map[string]common.Node)
+
 	node := &common.Node{RPCAddr: "8.8.8.8:80"}
 	addNode(node)
 	if len(nodes) != 1 {
@@ -38,6 +40,8 @@ func TestAddNode(t *testing.T) {
 }
 
 func TestRemoveNode(t *testing.T) {
+	nodes = make(map[string]common.Node)
+
 	node := &common.Node{RPCAddr: "8.8.8.8:80"}
 	addNode(node)
 	removeNode(node)
@@ -51,6 +55,8 @@ func TestRemoveNode(t *testing.T) {
 }
 
 func TestGetNodes(t *testing.T) {
+	nodes = make(map[string]common.Node)
+
 	if len(getNodes()) != 0 {
 		t.Errorf("\"getNodes()\" from empty nodes, len(getNodes()) = %v", len(getNodes()))
 	}
@@ -63,8 +69,10 @@ func TestGetNodes(t *testing.T) {
 }
 
 func TestGetShuffleNodes(t *testing.T) {
+	nodes = make(map[string]common.Node)
+
 	num := 10
-	for port := 1; port < num; port++ {
+	for port := 80; port < 80+num; port++ {
 		addNode(&common.Node{RPCAddr: net.JoinHostPort("8.8.8.8", strconv.Itoa(port))})
 	}
 	sns1 := getShuffleNodes()
