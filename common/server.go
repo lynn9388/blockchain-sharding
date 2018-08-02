@@ -34,15 +34,15 @@ type (
 		RPCPort int    `json:"rpcport" description:"port of the RPC listener" default:"9389"`
 	}
 
-	server struct {
+	ServerInfo struct {
 		APIAddr string
 		Node
 	}
 )
 
 var (
-	config Config
-	Server server
+	config     Config
+	serverInfo ServerInfo
 )
 
 func init() {
@@ -57,9 +57,13 @@ func SetConfig(c *Config) {
 	}
 	apiAddr := net.JoinHostPort(config.IP, strconv.Itoa(config.APIPort))
 	rpcAddr := net.JoinHostPort(config.IP, strconv.Itoa(config.RPCPort))
-	Server = server{APIAddr: apiAddr, Node: Node{RPCAddr: rpcAddr}}
+	serverInfo = ServerInfo{APIAddr: apiAddr, Node: Node{RPCAddr: rpcAddr}}
 }
 
 func GetConfig() *Config {
 	return &config
+}
+
+func GetServerInfo() *ServerInfo {
+	return &serverInfo
 }

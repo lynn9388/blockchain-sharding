@@ -35,7 +35,7 @@ var (
 func addNode(n *common.Node) {
 	nodesMux.Lock()
 	defer nodesMux.Unlock()
-	if common.Server.RPCAddr != n.RPCAddr {
+	if common.GetServerInfo().RPCAddr != n.RPCAddr {
 		if _, exists := nodes[n.RPCAddr]; !exists {
 			nodes[n.RPCAddr] = *n
 			common.Logger.Debug("added new node: ", n.RPCAddr)
