@@ -17,17 +17,14 @@
 package p2p
 
 import (
+	"net"
 	"net/rpc"
 	"sync"
 	"time"
 
 	"github.com/lynn9388/blockchain-sharding/common"
+	"google.golang.org/grpc"
 )
-
-type peer struct {
-	node   *common.Node
-	client *rpc.Client
-}
 
 const (
 	maxPeerNum         = 4
@@ -35,43 +32,37 @@ const (
 	fullNodesSleepTime = 2
 )
 
+type peer struct {
+	common.Node
+	Conn *grpc.ClientConn
+}
+
 var (
-	peers          = make(map[string]peer)
-	addPeerChan    = make(chan *common.Node)
-	removePeerChan = make(chan *common.Node)
-	peerMux        = sync.RWMutex{}
+	peers    = make(map[string]peer)
+	peersMux = sync.RWMutex{}
 )
 
 func NewPeerManager() {
 	go connectPeers()
+}
 
-	for {
-		select {
-		case node := <-addPeerChan:
-			addPeer(node)
-		case node := <-removePeerChan:
-			removePeer(node)
-		}
+func addPeer(p *peer) {
+	peersMux.Lock()
+	defer peersMux.Unlock()
+	if _, exists := peers[p.RPCAddr.String()]; !exists {
+		peers[p.RPCAddr.String()] = *p
+		common.Logger.Debug("add new peer: ", p.RPCAddr.String())
 	}
 }
 
-func addPeer(node *common.Node) {
-	peerMux.Lock()
-	defer peerMux.Unlock()
-	if _, exists := peers[node.RPCAddr.String()]; !exists {
-		client := ping(node)
-		if client != nil {
-			peers[node.RPCAddr.String()] = peer{node, client}
-			common.Logger.Debugf("add new peer: %v", node.RPCAddr.String())
-		}
+func removePeer(addr *net.TCPAddr) {
+	peersMux.Lock()
+	defer peersMux.Unlock()
+	if _, exists := peers[addr.String()]; exists {
+		peers[addr.String()].Conn.Close()
+		delete(peers, addr.String())
+		common.Logger.Debug("remove peer: ", addr.String())
 	}
-}
-
-func removePeer(node *common.Node) {
-	peerMux.Lock()
-	defer peerMux.Unlock()
-	peers[node.RPCAddr.String()].client.Close()
-	delete(peers, node.RPCAddr.String())
 }
 
 // ping tests if a node is reachable and returns connected client
@@ -95,22 +86,22 @@ func ping(node *common.Node) *rpc.Client {
 
 func connectPeers() {
 	for {
-		peerMux.RLock()
+		peersMux.RLock()
 		length := len(peers)
-		peerMux.RUnlock()
+		peersMux.RUnlock()
 		if length < maxPeerNum {
 			shuffleNodes := getShuffleNodes()
 			if len(shuffleNodes) > maxPeerNum {
 				shuffleNodes = shuffleNodes[:maxPeerNum]
 			}
-			for _, n := range shuffleNodes {
-				addPeerChan <- &n
-			}
+			//for _, n := range shuffleNodes {
+			//	addPeerChan <- &n
+			//}
 		}
 
-		peerMux.RLock()
+		peersMux.RLock()
 		length = len(peers)
-		peerMux.RUnlock()
+		peersMux.RUnlock()
 		if length < maxPeerNum {
 			discoverSigChan <- true
 			time.Sleep(lackNodesSleepTime * time.Second)
