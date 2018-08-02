@@ -18,14 +18,11 @@ package server
 
 import (
 	"os"
-
-	"time"
-
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/lynn9388/blockchain-sharding/common"
-	"github.com/lynn9388/blockchain-sharding/p2p"
 )
 
 func StartServer() {
@@ -37,8 +34,8 @@ func StartServer() {
 
 	time.Sleep(2 * time.Second)
 
-	go p2p.NewNodeManager()
-	go p2p.NewPeerManager()
+	//go p2p.NewNodeManager()
+	//go p2p.NewPeerManager()
 
 	select {
 	case <-sigChan:

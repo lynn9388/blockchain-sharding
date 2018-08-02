@@ -30,18 +30,18 @@ var serverCmd = &cobra.Command{
 construct a peer-to-peer network. It runs a web server to provides REST APIs.`,
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
+		common.SetConfig(config)
 		server.StartServer()
 	},
 }
 
+var config = common.GetConfig()
+
 func init() {
 	rootCmd.AddCommand(serverCmd)
-	var config common.Config
 
 	// Here you will define your flags and configuration settings.
-	serverCmd.Flags().StringVarP(&(config.IP), "ip", "i", common.DefaultIP, "the IP address of the server")
-	serverCmd.Flags().IntVarP(&(config.APIPort), "api-port", "a", common.DefaultAPIPort, "which port the API service listen on")
-	serverCmd.Flags().IntVarP(&(config.RPCPort), "rpc-port", "r", common.DefaultRPCPort, "which port the blockchain node listen on")
-
-	common.SetConfig(&config)
+	serverCmd.Flags().StringVarP(&config.IP, "ip", "i", common.DefaultIP, "the IP address of the server")
+	serverCmd.Flags().IntVarP(&config.APIPort, "api-port", "a", common.DefaultAPIPort, "which port the API service listen on")
+	serverCmd.Flags().IntVarP(&config.RPCPort, "rpc-port", "r", common.DefaultRPCPort, "which port the blockchain node listen on")
 }
