@@ -15,10 +15,3 @@
  */
 
 package server
-
-import (
-	"testing"
-)
-
-func TestNewAPIService(t *testing.T) {
-}

@@ -29,7 +29,7 @@ func StartServer() {
 	sigChan := make(chan os.Signal)
 	signal.Notify(sigChan, os.Interrupt, os.Kill, syscall.SIGTERM)
 
-	//go newAPIService(&common.Server.APIAddr)
+	startAPIServer()
 	startRPCServer()
 	p2p.StartPeerManager()
 

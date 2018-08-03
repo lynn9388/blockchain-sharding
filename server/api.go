@@ -19,8 +19,6 @@ package server
 import (
 	"net/http"
 
-	"net"
-
 	"github.com/emicklei/go-restful"
 	"github.com/emicklei/go-restful-openapi"
 	"github.com/go-openapi/spec"
@@ -29,7 +27,7 @@ import (
 
 type serverAPI int
 
-func newAPIService(addr *net.TCPAddr) {
+func startAPIServer() {
 	restful.DefaultContainer.Add(new(serverAPI).webService())
 
 	config := restfulspec.Config{
@@ -42,8 +40,9 @@ func newAPIService(addr *net.TCPAddr) {
 	// You need to download the Swagger HTML5 assets and change the FilePath location in the config below.
 	http.Handle("/api/", http.StripPrefix("/api/", http.FileServer(http.Dir("/home/lynn/Documents/Git/swagger-ui/dist"))))
 
-	common.Logger.Infof("start API service on %v, see API doc on http://%v/api/?url=http://%v/api.json", addr, addr, addr)
-	common.Logger.Fatal(http.ListenAndServe(addr.String(), nil))
+	addr := common.GetServerInfo().APIAddr
+	common.Logger.Infof("API server listening at: %v, see API doc on http://%v/api/?url=http://%v/api.json", addr, addr, addr)
+	go http.ListenAndServe(addr, nil)
 }
 
 // WebService creates a new service that can handle REST requests for Server resources.
