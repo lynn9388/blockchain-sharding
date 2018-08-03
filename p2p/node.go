@@ -17,6 +17,8 @@
 package p2p
 
 import (
+	"context"
+	"io"
 	"math/rand"
 	"sync"
 	"time"
@@ -28,7 +30,7 @@ var (
 	nodes    = make(map[string]common.Node)
 	nodesMux = sync.RWMutex{}
 
-	bootstraps = []string{"127.0.0.1:9388"}
+	bootstraps = []string{"127.0.0.1:9389"}
 )
 
 // addNode adds new node to managed node list if it does not exist
@@ -81,29 +83,56 @@ func getShuffleNodes() []common.Node {
 	return shuffleNodes
 }
 
-//func discoverNodes() {
-//	ps := getPeers()
-//	getNodesSigChan <- struct{}{}
-//	ns :=
-//	for p := range ps {
-//		if _, exists :=
-//	}
-//
-//	shuffleNodes := getShuffleNodes()
-//	for _, n := range shuffleNodes {
-//		client, err := connectNode(&n)
-//		if err != nil {
-//			removeNodeChan <- &common.Node{RPCAddr: n.RPCAddr}
-//			continue
-//		}
-//		newNodes := make([]common.Node, 0)
-//		err = client.Call("NodeService.GeiNeighborNodes", common.Server.RPCAddr, &newNodes)
-//		client.Close()
-//		if err != nil {
-//			common.Logger.Errorf("failed to call GeiNeighborNodes on %+v: %v", n, err)
-//		}
-//		for _, n := range newNodes {
-//			addNodeChan <- &common.Node{RPCAddr: n.RPCAddr}
-//		}
-//	}
-//}
+func isBootstrap(addr string) bool {
+	for _, b := range bootstraps {
+		if addr == b {
+			return true
+		}
+	}
+	return false
+}
+
+func discoverNodes() {
+	ns := getNodes()
+	ps := getPeers()
+	for k, v := range ps {
+		if _, exists := ns[k]; !exists {
+			ns[k] = common.Node{RPCAddr: v.RPCAddr}
+			addNode(&common.Node{RPCAddr: v.RPCAddr})
+		}
+	}
+
+	for _, p := range ps {
+		client := NewDiscoverNodeClient(p.Conn)
+		stream, err := client.GeiNeighborNodes(context.Background(), &common.GetServerInfo().Node)
+		if err != nil {
+			common.Logger.Error(err)
+			removeNode(&p.Node)
+			removePeer(p.RPCAddr)
+			continue
+		}
+
+		for {
+			n, err := stream.Recv()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				common.Logger.Error(err)
+				removeNode(&p.Node)
+				removePeer(p.RPCAddr)
+				break
+			}
+			if _, exists := ns[n.RPCAddr]; !exists {
+				ns[n.RPCAddr] = *n
+				addNode(n)
+			}
+		}
+	}
+
+	if len(ns) == 0 {
+		for _, b := range bootstraps {
+			addNode(&common.Node{RPCAddr: b})
+		}
+	}
+}

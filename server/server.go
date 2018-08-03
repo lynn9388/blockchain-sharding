@@ -20,9 +20,9 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/lynn9388/blockchain-sharding/common"
+	"github.com/lynn9388/blockchain-sharding/p2p"
 )
 
 func StartServer() {
@@ -31,11 +31,7 @@ func StartServer() {
 
 	//go newAPIService(&common.Server.APIAddr)
 	startRPCServer()
-
-	time.Sleep(2 * time.Second)
-
-	//go p2p.NewNodeManager()
-	//go p2p.NewPeerManager()
+	p2p.StartPeerManager()
 
 	select {
 	case <-sigChan:

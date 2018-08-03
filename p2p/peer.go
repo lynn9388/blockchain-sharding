@@ -17,7 +17,6 @@
 package p2p
 
 import (
-	"net"
 	"sync"
 	"time"
 
@@ -26,7 +25,7 @@ import (
 )
 
 const (
-	maxPeerNum         = 4
+	maxPeersNum        = 4
 	lackNodesSleepTime = 1
 	fullNodesSleepTime = 2
 )
@@ -41,52 +40,82 @@ var (
 	peersMux = sync.RWMutex{}
 )
 
-func NewPeerManager() {
-	go connectPeers()
+func StartPeerManager() {
+	for _, b := range bootstraps {
+		addNode(&common.Node{RPCAddr: b})
+	}
+
+	go func() {
+		for {
+			ps := getPeers()
+			num := len(ps)
+			if num < maxPeersNum {
+				sn := getShuffleNodes()
+				for i := 0; i < len(sn) && num < maxPeersNum; i++ {
+					if _, exists := ps[sn[i].RPCAddr]; exists {
+						continue
+					}
+					if connectNode(sn[i].RPCAddr) {
+						num++
+					}
+				}
+			}
+
+			if num < maxPeersNum {
+				go discoverNodes()
+				time.Sleep(lackNodesSleepTime * time.Second)
+			} else {
+				time.Sleep(fullNodesSleepTime * time.Second)
+			}
+		}
+	}()
 }
 
-func addPeer(p *peer) {
+// addPeer adds new peer to managed peer list if it does not exist and return true,
+func addPeer(p *peer) bool {
 	peersMux.Lock()
 	defer peersMux.Unlock()
 	if _, exists := peers[p.RPCAddr]; !exists {
 		peers[p.RPCAddr] = *p
-		common.Logger.Debug("add new peer: ", p.RPCAddr)
+		common.Logger.Debug("added new peer: ", p.RPCAddr)
+		return true
 	}
+	return false
 }
 
-func removePeer(addr *net.TCPAddr) {
+// removePeer removes peer from managed peer list if it exists and return true,
+func removePeer(rpcAddr string) bool {
 	peersMux.Lock()
 	defer peersMux.Unlock()
-	if _, exists := peers[addr.String()]; exists {
-		peers[addr.String()].Conn.Close()
-		delete(peers, addr.String())
-		common.Logger.Debug("remove peer: ", addr.String())
+	if _, exists := peers[rpcAddr]; exists {
+		peers[rpcAddr].Conn.Close()
+		delete(peers, rpcAddr)
+		common.Logger.Debug("removed peer: ", rpcAddr)
+		return true
 	}
+	return false
 }
 
-func connectPeers() {
-	for {
-		peersMux.RLock()
-		length := len(peers)
-		peersMux.RUnlock()
-		if length < maxPeerNum {
-			shuffleNodes := getShuffleNodes()
-			if len(shuffleNodes) > maxPeerNum {
-				shuffleNodes = shuffleNodes[:maxPeerNum]
-			}
-			//for _, n := range shuffleNodes {
-			//	addPeerChan <- &n
-			//}
-		}
-
-		peersMux.RLock()
-		length = len(peers)
-		peersMux.RUnlock()
-		if length < maxPeerNum {
-			discoverSigChan <- true
-			time.Sleep(lackNodesSleepTime * time.Second)
-		} else {
-			time.Sleep(fullNodesSleepTime * time.Second)
-		}
+// getPeers returns a copy of peers
+func getPeers() map[string]peer {
+	peersMux.RLock()
+	defer peersMux.RUnlock()
+	ps := make(map[string]peer)
+	for k, v := range peers {
+		ps[k] = v
 	}
+	return ps
+}
+
+func connectNode(rpcAddr string) bool {
+	conn, err := grpc.Dial(rpcAddr, grpc.WithInsecure())
+	if err != nil {
+		common.Logger.Errorf("failed to dial: %v", err)
+		return false
+	}
+	if !addPeer(&peer{Node: common.Node{RPCAddr: rpcAddr}, Conn: conn}) {
+		conn.Close()
+		return false
+	}
+	return true
 }
