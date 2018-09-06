@@ -18,7 +18,7 @@
       <option name="runOnExternalChanges" value="false" />
       <option name="scopeName" value="Project Files" />
       <option name="trackOnlyRoot" value="true" />
-      <option name="workingDir" value="" />
+      <option name="workingDir" value="$ProjectFileDir$" />
       <envs>
         <env name="GOROOT" value="$GOROOT$" />
         <env name="GOPATH" value="$GOPATH$" />
