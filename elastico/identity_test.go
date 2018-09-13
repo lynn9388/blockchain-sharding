@@ -19,6 +19,8 @@ package elastico
 import (
 	"testing"
 
+	"github.com/lynn9388/pox/pow"
+
 	"github.com/lynn9388/blockchain-sharding/crypto"
 )
 
@@ -37,4 +39,16 @@ func TestIDProof_Verify(t *testing.T) {
 	if proof.Verify() == true {
 		t.Fail()
 	}
+}
+
+func TestIDProof_GetCommitteeNo(t *testing.T) {
+	sk, err := crypto.NewKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	proof := NewIDProof("localhost:9388", sk.D.Bytes())
+	hash := pow.Hash(proof.toByte(), proof.Nonce)
+	no := proof.GetCommitteeNo()
+	t.Logf("committee number: %v -> %v", hash, no)
 }

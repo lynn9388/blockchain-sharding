@@ -18,6 +18,9 @@ package elastico
 
 import (
 	"bytes"
+	"log"
+	"math"
+	"strconv"
 
 	"github.com/lynn9388/pox/pow"
 )
@@ -25,6 +28,7 @@ import (
 const (
 	random     = "lynn9388"
 	difficulty = 5
+	shardNum   = 4
 )
 
 // NewIDProof returns a new proof for identity with PoW.
@@ -42,11 +46,28 @@ func NewIDProof(addr string, pk []byte) *IDProof {
 	}
 }
 
-// Verify verifies if the proof for identity is correct.
-func (p *IDProof) Verify() bool {
+// toByte converts the identity proof to slice of byte without nonce field.
+func (p *IDProof) toByte() []byte {
 	var data bytes.Buffer
 	data.WriteString(random)
 	data.WriteString(p.Addr)
 	data.Write(p.PK)
-	return pow.Fulfill(data.Bytes(), p.Nonce, difficulty)
+	return data.Bytes()
+}
+
+// Verify verifies if the identity proof is correct.
+func (p *IDProof) Verify() bool {
+	return pow.Fulfill(p.toByte(), p.Nonce, difficulty)
+}
+
+// GetCommitteeNo generates the committee number based on the identity proof.
+func (p *IDProof) GetCommitteeNo() int {
+	hash := pow.Hash(p.toByte(), p.Nonce)
+	bitNum := int(math.Ceil(math.Log2(shardNum)))
+	lastBytes := hash[len(hash)-bitNum:]
+	value, err := strconv.ParseUint(lastBytes, 16, 4*bitNum)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return int(value) % shardNum
 }
